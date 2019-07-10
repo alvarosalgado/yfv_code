@@ -11,7 +11,6 @@ and an aminoacid in the polyprotein.
 
 - ALL POSITIONS START AT ZERO!!! 000000000000
 
-Maybe see where in the genome the translation starts, and translate.
 
 Duplicate line:                             Cmd + Shift + D
 Move the current line Up or Down:           Cmd + Ctrl + Up
@@ -95,7 +94,7 @@ def pos_aminoacid(nn_pos, seq_rel_start, ref_genome, ref_polyprot):
     aa_pos: Which aminoacid position in the translated polyprotein
     it is in.
     aa: The translated amino acid.
-    codon: The codon in the dataset sequnce.
+    codon: The codon in the reference genome.
     codon_pos: The codon position (0, 1, 2).
     """
     for feature in ref_genome.features:
@@ -144,6 +143,8 @@ def seq_snv_info(nn_pos, seq, ref_genome, ref_polyprot, search_size=20):
             cds_start = int(feature.location.start)
             break
 
+    # position in the reference genome relatice to its start.
+    ref_pos = (nn_pos + seq_rel_start)
     # position in the reference genome CDS, relative to its CDS start.
     cds_pos = (nn_pos + seq_rel_start) - cds_start
     # aminoacid position in the polyprotein
@@ -155,7 +156,7 @@ def seq_snv_info(nn_pos, seq, ref_genome, ref_polyprot, search_size=20):
     codon_start = nn_pos - codon_pos
     # three letter codon
     codon_seq = seq[codon_start:codon_start+3]
-    aa_seq = codon.translate()
+    aa_seq = codon_seq.translate()
 
     ref_codon_start_pos = codon_start + seq_rel_start
     # three letter codon
@@ -163,7 +164,7 @@ def seq_snv_info(nn_pos, seq, ref_genome, ref_polyprot, search_size=20):
     # translated aminoacid
     aa_ref = ref_polyprot.seq[aa_pos]
 
-    return (codon_seq, aa_seq, codon_ref, aa_ref, codon_pos)
+    return (codon_seq, aa_seq, ref_pos, codon_ref, aa_ref, codon_pos)
 
 def which_protein(aa_pos, dic_prot):
     """
@@ -182,38 +183,40 @@ MAIN
 #######################################################################
 """
 
-dataset_file = '../DATA/!CLEAN/ALL_YFV.aln'
-ref_genome_file = '../DATA/!CLEAN/YFV_BeH655417_JF912190.gb'
-ref_polyprot_file = '../DATA/!CLEAN/YFV_polyprotein_AFH35044.gp'
+if __name__ == "__main__":
 
-(ref_genome, ref_polyprot, seq) = read_data(ref_genome_file, ref_polyprot_file, dataset_file)
+    dataset_file = '../DATA/!CLEAN/ALL_YFV.aln'
+    ref_genome_file = '../DATA/!CLEAN/YFV_BeH655417_JF912190.gb'
+    ref_polyprot_file = '../DATA/!CLEAN/YFV_polyprotein_AFH35044.gp'
 
-seq_rel_start = find_align_start(seq, ref_genome, 20)
-print(seq_rel_start)
-s1 = seq[:20]
-s2 = ref_genome[142:142+20].seq
-s1 == s2
+    (ref_genome, ref_polyprot, seq) = read_data(ref_genome_file, ref_polyprot_file, dataset_file)
 
-dic_prot = read_polyprotein(ref_polyprot)
+    seq_rel_start = find_align_start(seq, ref_genome, 20)
+    print(seq_rel_start)
+    s1 = seq[:20]
+    s2 = ref_genome[142:142+20].seq
+    s1 == s2
 
-(aa_pos, aa, codon, codon_pos) = pos_aminoacid(2990, seq_rel_start, ref_genome, ref_polyprot)
+    dic_prot = read_polyprotein(ref_polyprot)
 
-print(aa_pos)
-print(aa)
-print(codon)
-print(codon_pos)
+    (aa_pos, aa, codon, codon_pos) = pos_aminoacid(2990, seq_rel_start, ref_genome, ref_polyprot)
 
-prot = which_protein(aa_pos, dic_prot)
-print(prot)
+    print(aa_pos)
+    print(aa)
+    print(codon)
+    print(codon_pos)
+
+    prot = which_protein(aa_pos, dic_prot)
+    print(prot)
 
 
-(codon_seq, aa_seq, codon_ref, aa_ref, codon_pos) = seq_snv_info(2990, seq, ref_genome, ref_polyprot)
+    (codon_seq, aa_seq, codon_ref, aa_ref, codon_pos) = seq_snv_info(2990, seq, ref_genome, ref_polyprot)
 
-codon_seq
-aa_seq
-codon_ref
-aa_ref
-codon_pos
+    codon_seq
+    aa_seq
+    codon_ref
+    aa_ref
+    codon_pos
 
 """
 #######################################################################

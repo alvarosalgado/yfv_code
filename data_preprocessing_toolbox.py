@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""
+#######################################################################
+
+- Specific for "YFV Ct Callithrix investigation"
+
+- Read the fasta files containing the sequences' nucleotides and the excel files containing their metadata.
+- Clean the data.
+- Turn it into "one-hot encoded" data.
+- Save it to csv and pkl.
+
+- This is the same as 'data_preprocessing_YFV_rev1.ipynb', except for the markdown
+#######################################################################
+"""
 
 from Bio.Seq import Seq
 from Bio import SeqIO
@@ -7,16 +20,13 @@ from Bio.Alphabet import IUPAC
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns; sns.set()
+import seaborn as sns; sns.set_style('whitegrid')
 
 import re
 
 """
 #######################################################################
-- Read the fasta files containing the sequences' DNAs and the excel files containing their metadata.
-- Clean the data.
-- Turn it into "one-hot encoded" data.
-- Save it to csv and pkl.
+
 #######################################################################
 """
 
@@ -132,3 +142,160 @@ def link_meta_info(file_list, seq_dict, metadata_dict):
                         index_bookeeping[index_meta] = 1
                     else:
                         index_bookeeping[index_meta] += 1
+
+
+def concat_seq_df(seq_dict):
+
+    dfs = list(seq_dict.values())
+    seq_df = pd.concat(dfs)
+
+    return seq_df
+
+"""
+Data Cleaning
+"""
+def clean_df(seq_df, threshold=0.9):
+
+    # First, turn all "N" and "-" into np.nan. This will mark the missing values.
+    seq_df.replace('N', np.nan, inplace=True)
+    seq_df.replace('-', np.nan, inplace=True)
+
+    # Second, keep only rows (samples) containing less then threshold% missing values (NaN).
+    threshold = int(seq_df.shape[1]*threshold)
+    seq_df.dropna(axis=0, how='any', thresh=threshold, inplace=True)
+
+    # Third, remove all columns that still containg missing values.
+    seq_df.dropna(axis=1, how='any', inplace=True)
+
+    # Remove rows containing NaN or empty values in the Ct column
+    seq_df = seq_df[seq_df['Ct'].notnull()]
+    seq_df = seq_df[seq_df['Ct'] != 'ct']
+
+    # Make sure values in Ct column are float numeric
+    seq_df['Ct'] = pd.to_numeric(seq_df['Ct'])
+    seq_df['Ct'] = seq_df['Ct'].astype(np.float16)
+
+    # Make sure values in Date are datetime
+    seq_df['Date'] = pd.to_datetime(seq_df['Date'])
+
+    # Correct some values
+    seq_df.replace('Allouata', 'Alouatta', inplace=True)
+    seq_df.replace('cebidae', 'Cebidae', inplace=True)
+    seq_df.replace('NHP (unk)', 'unk', inplace=True)
+    seq_df.replace('Sem informação','unk', inplace=True)
+    seq_df.replace('Leontopithecus rosalia','L. rosalia', inplace=True)
+
+    # Remove all columns that contain only one value (they have no information for the classification algorithm)
+    for col in seq_df.columns:
+        if seq_df[col].nunique() == 1:
+            seq_df.drop(col, axis=1, inplace=True)
+
+    return seq_df
+
+def insert_features(seq_df, Ct_threshold = 20):
+    # Insert another column on the dataset to hold the epidemiologic season
+    # 2016/2017
+    # 2017/2018
+    seq_df.insert(4, 'Season', 'season')
+
+    # Fill season values based on date condition:
+    # season 1: before August 2017
+    # season 2: after August 2017
+    mask = seq_df['Date'] < pd.datetime(2017,8,1)
+    seq_df.loc[mask, 'Season'] = '2016/2017'
+
+    mask = seq_df['Date'] >= pd.datetime(2017,8,1)
+    seq_df.loc[mask, 'Season'] = '2017/2018'
+
+    # Insert another column on the dataset to hold the Ct group
+    # high = 1
+    # low = 0
+    seq_df.insert(5, 'Ct_Group', 0)
+    # Fill Ct groups based on:
+    # high: Ct > 20
+    # low: Ct <= 20
+    mask = seq_df['Ct'] <= Ct_threshold
+    seq_df.loc[mask, 'Ct_Group'] = 0
+
+    mask = seq_df['Ct'] > Ct_threshold
+    seq_df.loc[mask, 'Ct_Group'] = 1
+
+    return seq_df
+
+
+def one_hot_encoding(seq_df, file_path='../Callithrix_Analysis/DATA/!CLEAN/'):
+
+    nucleotides_df = seq_df.iloc[:, 6:]
+    seq_ohe_df = pd.get_dummies(nucleotides_df)
+
+    seq_ohe_df.insert(0, 'ID', seq_df['ID'])
+    seq_ohe_df.insert(1, 'Host', seq_df['Host'])
+    seq_ohe_df.insert(2, 'Ct', seq_df['Ct'])
+    seq_ohe_df.insert(3, 'Date', seq_df['Date'])
+    seq_ohe_df.insert(4, 'Season', seq_df['Season'])
+    seq_ohe_df.insert(5, 'Ct_Group', seq_df['Ct_Group'])
+
+    seq_ohe_df.to_csv(file_path + 'YFV_seq_ohe_df.csv', index=True, header=True, decimal='.', sep=',', float_format='%.2f')
+
+    seq_ohe_df.to_pickle(file_path + 'YFV_seq_ohe_df.pkl')
+
+    seq_df.to_pickle(file_path + 'YFV_seq_df.pkl')
+
+    return seq_ohe_df
+
+"""
+#######################################################################
+MAIN
+#######################################################################
+"""
+
+
+file_1 = '../Callithrix_Analysis/DATA/!CLEAN/2019-01-30_ZIBRA2_YFV-RIO-Diferentes_CTs'
+file_2 = '../Callithrix_Analysis/DATA/!CLEAN/NHP_65_outbreak'
+file_3 = '../Callithrix_Analysis/DATA/!CLEAN/2018-01_Salvador'
+file_4 = '../Callithrix_Analysis/DATA/!CLEAN/2018-03-04_LACEN_Bahia'
+file_5 = '../Callithrix_Analysis/DATA/!CLEAN/FUNED_AGOSTO-2018'
+file_6 = '../Callithrix_Analysis/DATA/!CLEAN/RIO_DE_JANEIRO'
+file_7 = '../Callithrix_Analysis/DATA/!CLEAN/YFV_LACEN_BAHIA'
+
+file_list = [file_1,
+            file_2,
+            file_3,
+            file_4,
+            file_5,
+            file_6,
+            file_7]
+
+(seq_list, metadata_list) = read_files(file_list)
+
+seq_dict = create_seq_dict(seq_list)
+metadata_dict = create_meta_dict(metadata_list)
+
+link_meta_info(file_list, seq_dict, metadata_dict)
+seq_dict[seq_list[0]]
+seq_df = concat_seq_df(seq_dict)
+seq_df = clean_df(seq_df, threshold=0.9)
+seq_df= insert_features(seq_df, Ct_threshold = 20)
+
+seq_ohe_df = one_hot_encoding(seq_df, file_path='../Callithrix_Analysis/DATA/!CLEAN/')
+
+host_count = seq_df.groupby('Host')["ID"].count()
+host_count = host_count[["Alouatta", "Callithrix"]]
+host_count.name = "Number of Sequences"
+table_count1_latex = host_count.to_latex()
+with open('./tables/table_count1_latex.txt', 'w') as f:
+    f.write(table_count1_latex)
+
+listdf = []
+for host, host_data in seq_df.groupby('Host'):
+    if ((host == "Alouatta") or (host == "Callithrix")):
+        df = pd.DataFrame(host_data.groupby('Ct_Group')['ID'].count()).T
+        df.index = [host]
+        df.columns = ["Low Ct", "High Ct"]
+        listdf.append(df)
+    #df.index = [host]
+    #print(b)
+df = pd.concat(listdf)
+table_count2_latex = df.to_latex()
+with open('./tables/table_count2_latex.txt', 'w') as f:
+    f.write(table_count2_latex)

@@ -9,8 +9,6 @@ salgado.alvaro@me.com
 
 """
 
-%matplotlib inline
-
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio import SeqFeature
@@ -155,7 +153,7 @@ def LR_k_fold_CV(X, y, k=10):
         alphas = logistic_regression(X_train, y_train)
         all_alphas[:,i] = alphas
 
-        P, predicted = predict(alphas, X_test)
+        P, predicted = LR_predict(alphas, X_test)
 
         # MSE = 1/m * sum((y_hat - y)^2)
         squared_error = (y_test - predicted)**2
@@ -188,8 +186,6 @@ def normalize_alphas(ave_alphas, X):
 
     df_alphas_std = np.std(X, axis = 0) * df_alphas
 
-    df_alphas_std.sort_values(ascending=False, inplace=True)
-
     return df_alphas_std
 
 """
@@ -204,55 +200,55 @@ Import data
 Import `.pkl` file that was created on "data_preprocessing_YFV.ipynb"
 #######################################################################
 """
-ohe_df = pd.read_pickle('../DATA/!CLEAN/YFV_seq_ohe_df.pkl')
-seq_df = pd.read_pickle('../DATA/!CLEAN/YFV_seq_df.pkl')
-
-ohe_df_calli = ohe_df[ohe_df['Host'] == 'Callithrix']
-ohe_df_calli = ohe_df_calli.sort_values(by='Ct_Group')
-
-ohe_df_alou = ohe_df[ohe_df['Host'] == 'Alouatta']
-
-"""
-#######################################################################
-Train and test splits
-#######################################################################
-"""
-X = ohe_df_calli.drop(["ID","Host","Ct","Date","Season","Ct_Group"], axis=1)
-y = ohe_df_calli["Ct_Group"]
-
-X_train, X_test, y_train, y_test = train_test_split(X, y,
-                                                    test_size=0.1,
-                                                    random_state=0,
-                                                    shuffle=True,
-                                                    stratify=y)
-print(X_train.shape)
-print(y_train.shape)
-print(X_test.shape)
-print(y_test.shape)
-
-"""
-#######################################################################
-Fit Logistic Regression
-#######################################################################
-"""
-
-e, ave_MSE, all_alphas, ave_alphas = LR_k_fold_CV(X_train, y_train)
-
-ave_acc = 1 - ave_MSE
-print("average accuracy =", ave_acc)
-
-for error in e:
-    print(1 - error)
-
-plt.scatter(range(ave_alphas.shape[0]), ave_alphas);
-
-# Create a pd.Series from average alphas.
-# Index it by attribute name, from X.columns.
-
-df_alphas_std = normalize_alphas(ave_alphas, X)
-
-plt.scatter(range(df_alphas_std.shape[0]), df_alphas_std);
-
-
-df_alphas_std[:10]
-df_alphas_std[-10:]
+# ohe_df = pd.read_pickle('../DATA/!CLEAN/YFV_seq_ohe_df.pkl')
+# seq_df = pd.read_pickle('../DATA/!CLEAN/YFV_seq_df.pkl')
+#
+# ohe_df_calli = ohe_df[ohe_df['Host'] == 'Callithrix']
+# ohe_df_calli = ohe_df_calli.sort_values(by='Ct_Group')
+#
+# ohe_df_alou = ohe_df[ohe_df['Host'] == 'Alouatta']
+#
+# """
+# #######################################################################
+# Train and test splits
+# #######################################################################
+# """
+# X = ohe_df_calli.drop(["ID","Host","Ct","Date","Season","Ct_Group"], axis=1)
+# y = ohe_df_calli["Ct_Group"]
+#
+# X_train, X_test, y_train, y_test = train_test_split(X, y,
+#                                                     test_size=0.1,
+#                                                     random_state=0,
+#                                                     shuffle=True,
+#                                                     stratify=y)
+# print(X_train.shape)
+# print(y_train.shape)
+# print(X_test.shape)
+# print(y_test.shape)
+#
+# """
+# #######################################################################
+# Fit Logistic Regression
+# #######################################################################
+# """
+#
+# e, ave_MSE, all_alphas, ave_alphas = LR_k_fold_CV(X_train, y_train)
+#
+# ave_acc = 1 - ave_MSE
+# print("average accuracy =", ave_acc)
+#
+# for error in e:
+#     print(1 - error)
+#
+# plt.scatter(range(ave_alphas.shape[0]), ave_alphas);
+#
+# # Create a pd.Series from average alphas.
+# # Index it by attribute name, from X.columns.
+#
+# df_alphas_std = normalize_alphas(ave_alphas, X)
+#
+# plt.scatter(range(df_alphas_std.shape[0]), df_alphas_std);
+#
+#
+# df_alphas_std[:10]
+# df_alphas_std[-10:]
