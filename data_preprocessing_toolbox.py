@@ -272,8 +272,9 @@ seq_dict = create_seq_dict(seq_list)
 metadata_dict = create_meta_dict(metadata_list)
 
 link_meta_info(file_list, seq_dict, metadata_dict)
-seq_dict[seq_list[0]]
+# seq_dict[seq_list[0]]
 seq_df = concat_seq_df(seq_dict)
+
 seq_df = clean_df(seq_df, threshold=0.9)
 seq_df= insert_features(seq_df, Ct_threshold = 20)
 

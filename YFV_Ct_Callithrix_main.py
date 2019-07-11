@@ -372,18 +372,22 @@ def plot_importances_genome(xgb_shap_values_df, rf_shap_values_df, alphas):
     axes[0].set_xlabel("")
     axes[0].set_ylabel("XGBoost importances")
     axes[0].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    axes[0].set_yticklabels([])
 
     axes[1].scatter(rf_shap_values_df.index, rf_shap_values_df, c='blue')
     axes[1].set_title("")
     axes[1].set_xlabel("")
     axes[1].set_ylabel("Random Forest importances")
     axes[1].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    axes[1].set_yticklabels([])
 
     axes[2].scatter(alphas.index, alphas, c='blue')
     axes[2].set_title("")
     axes[2].set_xlabel("Feature position (nucleotide position)")
     axes[2].set_ylabel("Logistic Regression importances")
     axes[2].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    axes[2].set_yticklabels([])
+
 
     fig.tight_layout();
 
@@ -535,6 +539,8 @@ def validate_SNV(seq_df, imp_merged):
 
     table = pd.concat([df1, df2, df3], axis=0)
 
+    table = table.iloc[:, :10]
+
     table_latex = table.to_latex()
 
     return (table, table_latex)
@@ -595,6 +601,8 @@ xgb.score(X, y)
 # %%
 (xgb_explainer, rf_explainer, xgb_shap_values, rf_shap_values) = get_explainer(xgb, rf, X_train)
 
+xgb_shap_values.shape
+X_train.columns
 rf_shap_values_df = pd.DataFrame(rf_shap_values,
                                 index=X_train.index,
                                 columns=X_train.columns)
@@ -625,6 +633,20 @@ Analyze results
 """
 
 imp_merged = get_merged_results(xgb_summary, rf_summary, sorted_alphas, 30)
+
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 8))
+
+ax.barh(imp_merged.index[0:30], imp_merged[0:30])
+ax.set_yticks(imp_merged.index[0:30])
+ax.set_yticklabels(imp_merged.index[0:30])
+ax.invert_yaxis()  # labels read top-to-bottom
+ax.set_xlabel('Feature Importance')
+ax.set_title('XGBoosting')
+ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+
+fig.tight_layout();
+
+fig.savefig("./figures/combined_30_summary.png", format='png', dpi=300, transparent=False)
 
 # The analysis below and the results shown in "table" demonstrate the power of XGBoost. It only picked 3 features, and there was a total of 5 that really had any informative value. All the rest, that both RF and LR gave some importance (albeit small), have no information at all, given that they do not contain a nucleotide that is different from the most frequent one in the other class and in the Alouatta samples.
 (table, table_latex) = validate_SNV(seq_df, imp_merged)
