@@ -106,7 +106,7 @@ for filename in file_list:
     # print(identifiers)
 
 # Now I have all sequences in dataframes that contain the "library" and "barcode" information.
-seq_dict['library2'].head(12)
+seq_dict['library4'].head(12)
 # Link the metadata in human_df to the sequences
 human_df.head()
 
@@ -136,7 +136,7 @@ seq_df = pd.concat(list_seq_df)
 
 seq_df = seq_df[pd.notnull(seq_df['ID'])]
 
-seq_df[seq_df['ID'] == 'SA33']
+seq_df_original = seq_df.copy()
 
 
 """
@@ -179,8 +179,10 @@ seq_df.groupby('Host').count()
 
 # check if these 4 cases are deaths or serious.
 seq_df[seq_df["Host"] == "Human Serious or Fatal"]
+
 seq_ohe_df = one_hot_encoding(seq_df)
 
+seq_df_original.to_pickle('../Human_Analisys/DATA/human_YFV_original_seq_df.pkl')
 
 # Write report tables
 host_count = seq_df.groupby('Host')["ID"].count()
