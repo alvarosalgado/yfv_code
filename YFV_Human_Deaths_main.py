@@ -661,13 +661,13 @@ snv_to_analyze = table_clean.loc['Serious', :]
 
 import ref_genome_polyprot_toolbox as g_tool
 
-dataset_file = '../Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/YiBRAlibrary1_30012018.consensus.fasta'
+dataset_file = '../Callithrix_Analysis/DATA/!CLEAN/ALL_YFV.aln'
 ref_genome_file = '../Callithrix_Analysis/DATA/!CLEAN/YFV_BeH655417_JF912190.gb'
 ref_polyprot_file = '../Callithrix_Analysis/DATA/!CLEAN/YFV_polyprotein_AFH35044.gp'
 
 (ref_genome, ref_polyprot, seq) = g_tool.read_data(ref_genome_file, ref_polyprot_file, dataset_file)
 
-querry_set = SeqIO.parse(dataset_file, "fasta")
+querry_set = SeqIO.parse('../Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/YiBRAlibrary1_30012018.consensus.fasta', "fasta")
 first_record = next(querry_set)
 second_record = next(querry_set)
 seq = second_record.seq
