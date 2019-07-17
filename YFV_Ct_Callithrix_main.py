@@ -641,7 +641,7 @@ ax.set_yticks(imp_merged.index[0:30])
 ax.set_yticklabels(imp_merged.index[0:30])
 ax.invert_yaxis()  # labels read top-to-bottom
 ax.set_xlabel('Feature Importance')
-ax.set_title('XGBoosting')
+ax.set_title('Most important genomic positions found by XGBoost, Random Forest and Modified Logistic Regression together.')
 ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
 
 fig.tight_layout();
@@ -715,3 +715,9 @@ table3 = pd.concat(list(report_dic.values()))
 table3_latex = table3.to_latex()
 with open('./tables/table3_latex.txt', 'w') as f:
     f.write(table3_latex)
+
+# Select only callithrix samples
+df_calli = seq_df[seq_df['Host'] == 'Callithrix']
+df_calli = df_calli.sort_values(by='Ct_Group')
+# df_calli.loc[:, ["Ct_Group", 2990]]
+df_calli[df_calli["Ct_Group"]==1][1199]

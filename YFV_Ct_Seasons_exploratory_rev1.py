@@ -356,3 +356,35 @@ def plot_figures_2(host1, host2, df1, df2):
 # %%
 plot_figures_2('Callithrix', 'Alouatta', callithrix_df, alouatta_df)
 # %%
+
+# %%
+def plot_figures_3(host1, host2, df1, df2):
+    fig1, axes1 = plt.subplots(figsize=(12, 6), nrows=2, ncols=1, sharex=True)
+
+    x1 = df1['Date'].values
+    y1 = df1['Ct'].values
+
+    x2 = df2['Date'].values
+    y2 = df2['Ct'].values
+
+    axes1[0].scatter(x1, y1)
+    axes1[0].set_title(host1 + ' Ct values')
+
+    axes1[0].set_xlabel('Date')
+    axes1[0].set_ylabel('Ct')
+
+    axes1[0].set_ylim((0, 40))
+
+    axes1[1].scatter(x2, y2)
+    axes1[1].set_title(host2 + ' Ct values')
+
+    axes1[1].set_xlabel('Date')
+    axes1[1].set_ylabel('Ct')
+
+    axes1[1].set_ylim((0, 40))
+
+    fig1.autofmt_xdate()
+
+    fig1.savefig('./figures/Scatter2_seasons.png', format='png', dpi=300, transparent=False)
+# %%
+plot_figures_3('Callithrix', 'Alouatta', callithrix_df, alouatta_df)

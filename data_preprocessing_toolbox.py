@@ -43,7 +43,7 @@ def read_files(file_list):
 
     return (seq_list, metadata_list)
 
-def create_seq_df(file):
+def create_seq_df(file, seq_start=0):
     # Creates a dataframe based on a ".aln" file.
 
     # Gets the sequences IDs from a multi-fasta into a list
@@ -53,12 +53,13 @@ def create_seq_df(file):
     seqs = np.array([list(str(seq_rec.seq)) for seq_rec in SeqIO.parse(file, "clustal")])
 
     # Creates columns names based on position, starting from 0.
-    cols = list(range(seqs.shape[1]))
+    cols = list(range(seq_start, seq_start + seqs.shape[1]))
 
     # Creates dataframe with data
     seq_df = pd.DataFrame(seqs, index=identifiers, columns=cols)
 
     return seq_df
+
 
 def create_seq_dict(seq_list):
     seq_dict = {}
@@ -192,6 +193,7 @@ def clean_df(seq_df, threshold=0.9):
 
     return seq_df
 
+
 def insert_features(seq_df, Ct_threshold = 20):
     # Insert another column on the dataset to hold the epidemiologic season
     # 2016/2017
@@ -272,11 +274,18 @@ seq_dict = create_seq_dict(seq_list)
 metadata_dict = create_meta_dict(metadata_list)
 
 link_meta_info(file_list, seq_dict, metadata_dict)
-# seq_dict[seq_list[0]]
 seq_df = concat_seq_df(seq_dict)
-
+seq_df.head()
 seq_df = clean_df(seq_df, threshold=0.9)
 seq_df= insert_features(seq_df, Ct_threshold = 20)
+
+# seq_0 = seq_df.iloc[0, :].values[6:]
+# seq_df.replace('N', np.nan, inplace=True)
+# seq_df.replace('-', np.nan, inplace=True)
+# threshold = int(seq_df.shape[1]*0.9)
+# seq_df.dropna(axis=0, how='any', thresh=threshold, inplace=True)
+# seq_df.dropna(axis=1, how='any', inplace=True)
+# seq_df.shape
 
 seq_ohe_df = one_hot_encoding(seq_df, file_path='../Callithrix_Analysis/DATA/!CLEAN/')
 
