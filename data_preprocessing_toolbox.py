@@ -95,6 +95,7 @@ def link_meta_info(file_list, seq_dict, metadata_dict):
         seq_df.insert(2, 'Ct', 'ct')
         seq_df.insert(3, 'Date', 'date')
 
+
         # For each ID in metadata (here in its index).
         # In the excel files, there is a column called "index".
         # This column was used as the "metadata dataframe" index.
@@ -125,6 +126,7 @@ def link_meta_info(file_list, seq_dict, metadata_dict):
                         seq_df.loc[index_b,'Host'] = metadata_df.loc[index_meta, 'Host']
                         seq_df.loc[index_b,'Date'] = metadata_df.loc[index_meta, 'Date']
                         seq_df.loc[index_b,'Ct'] = metadata_df.loc[index_meta, 'Ct']
+
                         index_bookeeping[index_meta] = 1
                     # else, if this sequence already has metadata values associated
                     # (this happens because identical sequences are grouped together, and their fasta IDs
@@ -140,6 +142,7 @@ def link_meta_info(file_list, seq_dict, metadata_dict):
                         seq_df.loc[index_copy,'Host'] = metadata_df.loc[index_meta, 'Host']
                         seq_df.loc[index_copy,'Date'] = metadata_df.loc[index_meta, 'Date']
                         seq_df.loc[index_copy,'Ct'] = metadata_df.loc[index_meta, 'Ct']
+
                         index_bookeeping[index_meta] = 1
                     else:
                         index_bookeeping[index_meta] += 1
@@ -237,6 +240,7 @@ def one_hot_encoding(seq_df, file_path='../Callithrix_Analysis/DATA/!CLEAN/'):
     seq_ohe_df.insert(4, 'Season', seq_df['Season'])
     seq_ohe_df.insert(5, 'Ct_Group', seq_df['Ct_Group'])
 
+
     seq_ohe_df.to_csv(file_path + 'YFV_seq_ohe_df.csv', index=True, header=True, decimal='.', sep=',', float_format='%.2f')
 
     seq_ohe_df.to_pickle(file_path + 'YFV_seq_ohe_df.pkl')
@@ -274,8 +278,11 @@ seq_dict = create_seq_dict(seq_list)
 metadata_dict = create_meta_dict(metadata_list)
 
 link_meta_info(file_list, seq_dict, metadata_dict)
+# seq_dict[file_5+'.aln']
 seq_df = concat_seq_df(seq_dict)
-seq_df.head()
+
+# seq_df.loc['FUNED_AGOSTO-2018|FAH50662/|BC33|_FAH50662.primertrimmed.sorted.bam', :]
+# metadata_dict[file_7+'.xlsx'].head()
 seq_df = clean_df(seq_df, threshold=0.9)
 seq_df= insert_features(seq_df, Ct_threshold = 20)
 
