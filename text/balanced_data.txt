@@ -1,12 +1,3 @@
 Total Callithrix samples: 75
 Callithrix samples in Season 2016/2017: 21
 Callithrix samples in Season 2017/2018: 54
-Total Callithrix samples: 75
-Callithrix samples with high Ct: 40
-Callithrix samples with low Ct: 35
-Total Alouatta samples: 43
-Alouatta samples in Season 2016/2017: 25
-Alouatta samples in Season 2017/2018: 18
-Total Alouatta samples: 43
-Alouatta samples with high Ct: 3
-Alouatta samples with low Ct: 40

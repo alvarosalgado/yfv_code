@@ -286,14 +286,14 @@ def plot_figures(host1, host2, df1, df2):
     axes1[0].scatter(x1, y1)
     axes1[0].set_title(host1 + ' Ct values')
 
-    axes1[0].set_xlabel('Date')
-    axes1[0].set_ylabel('Ct')
+    axes1[0].set_xlabel('Sample Collection Date')
+    axes1[0].set_ylabel('Ct Value by Sample')
 
     axes1[1].scatter(x2, y2)
     axes1[1].set_title(host2 + ' Ct values')
 
-    axes1[1].set_xlabel('Date')
-    axes1[1].set_ylabel('Ct')
+    axes1[1].set_xlabel('Sample Collection Date')
+    axes1[1].set_ylabel('Ct Value by Sample')
 
     fig1.autofmt_xdate()
 
@@ -379,11 +379,16 @@ def plot_figures_2(host1, host2, df1, df2):
     fig2.savefig('./figures/BoxPlot_highlow.png', format='png', dpi=300, transparent=False)
 
     fig3, axes3 = plt.subplots(figsize=(12, 6), nrows=1, ncols=2, sharey=True)
-    sns.violinplot(x="Host", y="Ct", data=df1, ax=axes3[0])
-    sns.violinplot(x="Host", y="Ct", data=df2, ax=axes3[1])
+    sns.violinplot(x="Host", y="Ct", data=df1, ax=axes3[0], inner="box")
+    sns.violinplot(x="Host", y="Ct", data=df2, ax=axes3[1], inner="box")
 
-    axes3[0].set_title(host1 + ' Ct values violin plot');
-    axes3[1].set_title(host2 + ' Ct values violin plot');
+    axes3[0].set_title(host1 + ' Violin plot');
+    axes3[0].set_xlabel('Samples dispersion by Ct value')
+    axes3[0].set_ylabel('Ct value')
+
+    axes3[1].set_title(host2 + ' Violin plot');
+    axes3[1].set_xlabel('Samples dispersion by Ct value')
+    axes3[1].set_ylabel('Ct value')
 
     fig3.savefig('./figures/ViolinPlot_highlow.png', format='png', dpi=300, transparent=False)
 # %%
@@ -403,16 +408,16 @@ def plot_figures_3(host1, host2, df1, df2):
     axes1[0].scatter(x1, y1)
     axes1[0].set_title(host1 + ' Ct values')
 
-    axes1[0].set_xlabel('Date')
-    axes1[0].set_ylabel('Ct')
+    axes1[0].set_xlabel('Sample Collection Date')
+    axes1[0].set_ylabel('Ct value by sample')
 
     axes1[0].set_ylim((0, 40))
 
     axes1[1].scatter(x2, y2)
     axes1[1].set_title(host2 + ' Ct values')
 
-    axes1[1].set_xlabel('Date')
-    axes1[1].set_ylabel('Ct')
+    axes1[1].set_xlabel('Sample Collection Date')
+    axes1[1].set_ylabel('Ct value by sample')
 
     axes1[1].set_ylim((0, 40))
 

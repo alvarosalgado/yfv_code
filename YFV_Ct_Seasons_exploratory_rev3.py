@@ -127,8 +127,8 @@ def plot_scatter(host_list, metadata):
         axes1[i].scatter(x1, y1)
         axes1[i].set_title(host + ' Ct values')
 
-        axes1[i].set_xlabel('Date')
-        axes1[i].set_ylabel('Ct')
+        axes1[i].set_xlabel('Sample Collection Date')
+        axes1[i].set_ylabel('Ct Value by Sample')
 
         axes1[i].set_ylim((0, 40))
 
