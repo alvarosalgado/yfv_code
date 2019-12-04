@@ -3,7 +3,7 @@
 {} &  Number of Sequences \\
 Host       &                      \\
 \midrule
-Alouatta   &                   26 \\
-Callithrix &                   27 \\
+Alouatta   &                   21 \\
+Callithrix &                   23 \\
 \bottomrule
 \end{tabular}

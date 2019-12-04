@@ -5,8 +5,8 @@ Host       &            \\
 \midrule
 Alouatta   &  12.469840 \\
 Callicebus &  14.919271 \\
-Callithrix &  22.344510 \\
-Cebidae    &  10.250326 \\
+Callithrix &  22.001146 \\
+Cebidae    &  10.290565 \\
 Cebus      &  14.546875 \\
 H          &  24.114583 \\
 L. rosalia &  11.882812 \\

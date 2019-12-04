@@ -53,7 +53,7 @@ def logistic_regression(X, y):
     y = y.astype(int)
 
     A = X_ohe
-    b = pd.Series(np.zeros(len(y)))
+    b = np.zeros(len(y))
     b0 = y
 
     # matrix dimensions
@@ -62,10 +62,10 @@ def logistic_regression(X, y):
 
     # Transforms values in vector "b" to avoid numerical problems when using log or exp.
     for i in range(m):
-        if b0.iloc[i] == 1:
-            b.iloc[i] = c1
+        if b0[i] == 1:
+            b[i] = c1
         else:
-            b.iloc[i] = c0
+            b[i] = c0
 
     B = A
     B.insert(loc=0, column='alpha_0', value=1)

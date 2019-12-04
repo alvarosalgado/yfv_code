@@ -1,9 +1,9 @@
-\begin{tabular}{llllll}
+\begin{tabular}{llll}
 \toprule
-{} & 2990 & 8918 & 860  & 1199 & 854  \\
+{} & 2990 & 8741 & 8918 \\
 \midrule
-Callithrix Low Ct  &    G &    C &    T &    A &    C \\
-Callithrix High Ct &    A &    T &    C &    G &    T \\
-Alouatta           &    G &    C &    T &    A &    C \\
+Callithrix Low Ct  &    G &    G &    C \\
+Callithrix High Ct &    A &    A &    T \\
+Alouatta           &    G &    G &    C \\
 \bottomrule
 \end{tabular}
