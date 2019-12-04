@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
 from sklearn.ensemble import RandomForestClassifier
 
+import scipy as sp
+
 import shap
 # %%
 shap.__version__
@@ -333,6 +335,7 @@ plot_figures('Callithrix', 'Alouatta', callithrix_df, alouatta_df)
 # %% markdown
 # ## Understanding how Ct values changed by High/Low groups
 
+
 # %%
 def plot_figures_2(host1, host2, df1, df2):
     fig1, axes1 = plt.subplots(figsize=(12, 6), nrows=1, ncols=2, sharey=True)
@@ -430,3 +433,19 @@ plot_figures_3('Callithrix', 'Alouatta', callithrix_df, alouatta_df)
 
 
 metadata.to_csv("../Callithrix_Analysis/DATA/!CLEAN/metadata_YFV_NHP_LatLon.csv")
+
+
+
+"""
+Teste estatístico!!!!!!!!!!
+"""
+
+dados1 = callithrix_df[callithrix_df["Season"] == "2016/2017"]
+dados2 = callithrix_df[callithrix_df["Season"] == "2017/2018"]
+
+
+x = dados1["Ct"]
+y = dados2["Ct"]
+sp.stats.mannwhitneyu(x, y)
+
+metadata.groupby('Host').count()

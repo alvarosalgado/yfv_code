@@ -682,6 +682,7 @@ seq_rel_start = g_tool.find_align_start(seq, ref_genome, 20)
 dic_prot = g_tool.read_polyprotein(ref_polyprot)
 
 report_dic = {}
+# snv_to_analyze is a PandasSeries whose index is the NN position and the content is the NN letter.
 for nn_pos, nn in snv_to_analyze.iteritems():
 
     dic = {}
@@ -721,3 +722,13 @@ df_calli = seq_df[seq_df['Host'] == 'Callithrix']
 df_calli = df_calli.sort_values(by='Ct_Group')
 # df_calli.loc[:, ["Ct_Group", 2990]]
 df_calli[df_calli["Ct_Group"]==1][1199]
+
+xgb_explainer.expected_value
+xgb_shap_values[0,:].shape
+
+xgb_shap_values_df.iloc[0,:].shape
+seq_df.iloc[0,:].shape
+X_train.shape
+
+shap.force_plot(xgb_explainer.expected_value, xgb_shap_values[0,:], X_train.iloc[0,:])
+shap.initjs()

@@ -201,7 +201,7 @@ def insert_features(seq_df, Ct_threshold = 20):
     # Insert another column on the dataset to hold the epidemiologic season
     # 2016/2017
     # 2017/2018
-    seq_df.insert(4, 'Season', 'season')
+    seq_df.insert(3, 'Season', 'season')
 
     # Fill season values based on date condition:
     # season 1: before August 2017
@@ -215,7 +215,7 @@ def insert_features(seq_df, Ct_threshold = 20):
     # Insert another column on the dataset to hold the Ct group
     # high = 1
     # low = 0
-    seq_df.insert(5, 'Ct_Group', 0)
+    seq_df.insert(4, 'Ct_Group', 0)
     # Fill Ct groups based on:
     # high: Ct > 20
     # low: Ct <= 20
@@ -225,10 +225,11 @@ def insert_features(seq_df, Ct_threshold = 20):
     mask = seq_df['Ct'] > Ct_threshold
     seq_df.loc[mask, 'Ct_Group'] = 1
 
+
     return seq_df
 
 
-def one_hot_encoding(seq_df, file_path='../Callithrix_Analysis/DATA/!CLEAN/'):
+def one_hot_encoding(seq_df, file_path='../DATA/Callithrix_Analysis/DATA/!CLEAN/'):
 
     nucleotides_df = seq_df.iloc[:, 6:]
     seq_ohe_df = pd.get_dummies(nucleotides_df)
@@ -256,13 +257,13 @@ MAIN
 """
 
 
-file_1 = '../Callithrix_Analysis/DATA/!CLEAN/2019-01-30_ZIBRA2_YFV-RIO-Diferentes_CTs'
-file_2 = '../Callithrix_Analysis/DATA/!CLEAN/NHP_65_outbreak'
-file_3 = '../Callithrix_Analysis/DATA/!CLEAN/2018-01_Salvador'
-file_4 = '../Callithrix_Analysis/DATA/!CLEAN/2018-03-04_LACEN_Bahia'
-file_5 = '../Callithrix_Analysis/DATA/!CLEAN/FUNED_AGOSTO-2018'
-file_6 = '../Callithrix_Analysis/DATA/!CLEAN/RIO_DE_JANEIRO'
-file_7 = '../Callithrix_Analysis/DATA/!CLEAN/YFV_LACEN_BAHIA'
+file_1 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/2019-01-30_ZIBRA2_YFV-RIO-Diferentes_CTs'
+file_2 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/NHP_65_outbreak'
+file_3 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/2018-01_Salvador'
+file_4 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/2018-03-04_LACEN_Bahia'
+file_5 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/FUNED_AGOSTO-2018'
+file_6 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/RIO_DE_JANEIRO'
+file_7 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/YFV_LACEN_BAHIA'
 
 file_list = [file_1,
             file_2,
@@ -280,12 +281,17 @@ metadata_dict = create_meta_dict(metadata_list)
 link_meta_info(file_list, seq_dict, metadata_dict)
 # seq_dict[file_5+'.aln']
 seq_df = concat_seq_df(seq_dict)
+seq_df.groupby('Host').count()
 
+# seq_df = seq_df[seq_df['Host'] == 'Callithrix'].copy()
 # seq_df.loc['FUNED_AGOSTO-2018|FAH50662/|BC33|_FAH50662.primertrimmed.sorted.bam', :]
 # metadata_dict[file_7+'.xlsx'].head()
-seq_df = clean_df(seq_df, threshold=0.9)
-seq_df= insert_features(seq_df, Ct_threshold = 20)
+seq_df = clean_df(seq_df, threshold=0.95)
 
+seq_df.shape
+seq_df= insert_features(seq_df, Ct_threshold = 20)
+# High Ct
+seq_df.groupby('Host')['Ct_Group'].sum()
 # seq_0 = seq_df.iloc[0, :].values[6:]
 # seq_df.replace('N', np.nan, inplace=True)
 # seq_df.replace('-', np.nan, inplace=True)
@@ -294,7 +300,7 @@ seq_df= insert_features(seq_df, Ct_threshold = 20)
 # seq_df.dropna(axis=1, how='any', inplace=True)
 # seq_df.shape
 
-seq_ohe_df = one_hot_encoding(seq_df, file_path='../Callithrix_Analysis/DATA/!CLEAN/')
+seq_ohe_df = one_hot_encoding(seq_df, file_path='../DATA/Callithrix_Analysis/DATA/!CLEAN/')
 
 host_count = seq_df.groupby('Host')["ID"].count()
 host_count = host_count[["Alouatta", "Callithrix"]]

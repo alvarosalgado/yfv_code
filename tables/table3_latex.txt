@@ -1,0 +1,9 @@
+\begin{tabular}{llllllll}
+\toprule
+{} &    protein & Reference nn pos & Reference codon & Reference aa & Sequence codon & Sequence aa & Codon position (0, 1, 2) \\
+\midrule
+2990 &  Flavi\_NS1 &             3132 &             CCG &            P &            CCA &           P &                        2 \\
+8741 &  Flavi\_NS5 &             8883 &             GAA &            E &            GAA &           E &                        2 \\
+8918 &  Flavi\_NS5 &             9060 &             ATT &            I &            ATT &           I &                        2 \\
+\bottomrule
+\end{tabular}

@@ -2,7 +2,7 @@
 \toprule
 {} &  Low Ct &  High Ct \\
 \midrule
-Alouatta   &      24 &        2 \\
-Callithrix &      21 &        6 \\
+Alouatta   &      20 &        1 \\
+Callithrix &      19 &        4 \\
 \bottomrule
 \end{tabular}

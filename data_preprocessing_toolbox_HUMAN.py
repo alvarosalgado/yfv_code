@@ -17,7 +17,7 @@ import glob
 functions
 #######################################################################
 """
-def one_hot_encoding(seq_df, file_path='../Human_Analisys/DATA/'):
+def one_hot_encoding(seq_df, file_path='../DATA/Human_Analisys/DATA/'):
 
     nucleotides_df = seq_df.iloc[:, 5:]
     seq_ohe_df = pd.get_dummies(nucleotides_df)
@@ -38,7 +38,7 @@ def one_hot_encoding(seq_df, file_path='../Human_Analisys/DATA/'):
 
 
 # Read excel into a pd.DataFrame
-file = '../Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/YFV_Jan_2018_SampleList.xlsx'
+file = '../DATA/Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/YFV_Jan_2018_SampleList.xlsx'
 sample_list_excel = pd.read_excel(file, index_col='YiBRA_SSA_ID')
 
 # Select only rows containing human samples
@@ -49,6 +49,7 @@ human_df = pd.concat([human_df1, human_df2], axis=0)
 # Remove samples that were not sequenced
 human_df = human_df[pd.notnull(human_df['YiBRA2_Library_Number'])]
 
+human_df.shape
 """####################################"""
 
 
@@ -66,7 +67,7 @@ human_df.loc[human_df['YiBRA2_Library_Number'] == 'library 7', 'YiBRA2_Library_N
 """####################################"""
 
 # get all fasta files in a list
-file_list = glob.glob("../Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/*.fasta")
+file_list = glob.glob("../DATA/Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/*.fasta")
 
 """####################################"""
 
@@ -137,8 +138,9 @@ seq_df = pd.concat(list_seq_df)
 seq_df = seq_df[pd.notnull(seq_df['ID'])]
 
 seq_df_original = seq_df.copy()
+seq_df_original.shape
 
-
+seq_df = seq_df_original.copy()
 """
 Data Cleaning
 """
@@ -182,12 +184,16 @@ seq_df[seq_df["Host"] == "Human Serious or Fatal"]
 
 seq_ohe_df = one_hot_encoding(seq_df)
 
-seq_df_original.to_pickle('../Human_Analisys/DATA/human_YFV_original_seq_df.pkl')
+seq_df_original.to_pickle('../DATA/Human_Analisys/DATA/human_YFV_original_seq_df.pkl')
 
 # Write report tables
 host_count = seq_df.groupby('Host')["ID"].count()
 host_count = host_count[["Human", "Human Serious or Fatal"]]
 host_count.name = "Number of Sequences"
-table_human_count1_latex = host_count.to_latex()
-with open('./tables/table_human_count1_latex.txt', 'w') as f:
-    f.write(table_human_count1_latex)
+
+host_count.to_csv('./OUTPUT/HUMAN_sample_count.csv')
+# table_human_count1_latex = host_count.to_latex()
+# with open('./tables/table_human_count1_latex.txt', 'w') as f:
+#     f.write(table_human_count1_latex)
+
+seq_ohe_df.shape

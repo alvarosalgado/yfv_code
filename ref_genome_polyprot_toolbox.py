@@ -185,9 +185,9 @@ MAIN
 
 if __name__ == "__main__":
 
-    dataset_file = '../DATA/!CLEAN/ALL_YFV.aln'
-    ref_genome_file = '../DATA/!CLEAN/YFV_BeH655417_JF912190.gb'
-    ref_polyprot_file = '../DATA/!CLEAN/YFV_polyprotein_AFH35044.gp'
+    dataset_file = '../Callithrix_Analysis/DATA/!CLEAN/ALL_YFV.aln'
+    ref_genome_file = '../Callithrix_Analysis/DATA/!CLEAN/YFV_BeH655417_JF912190.gb'
+    ref_polyprot_file = '../Callithrix_Analysis/DATA/!CLEAN/YFV_polyprotein_AFH35044.gp'
 
     (ref_genome, ref_polyprot, seq) = read_data(ref_genome_file, ref_polyprot_file, dataset_file)
 
@@ -199,7 +199,7 @@ if __name__ == "__main__":
 
     dic_prot = read_polyprotein(ref_polyprot)
 
-    (aa_pos, aa, codon, codon_pos) = pos_aminoacid(2990, seq_rel_start, ref_genome, ref_polyprot)
+    (aa_pos, aa, codon, codon_pos) = pos_aminoacid(6501, seq_rel_start, ref_genome, ref_polyprot)
 
     print(aa_pos)
     print(aa)
@@ -210,13 +210,30 @@ if __name__ == "__main__":
     print(prot)
 
 
-    (codon_seq, aa_seq, codon_ref, aa_ref, codon_pos) = seq_snv_info(2990, seq, ref_genome, ref_polyprot)
+    (codon_seq, aa_seq, ref_pos, codon_ref, aa_ref, codon_pos) = seq_snv_info(6501, seq, ref_genome, ref_polyprot)
 
     codon_seq
     aa_seq
     codon_ref
     aa_ref
     codon_pos
+    ref_pos
+
+    ref_polyprot.seq[aa_pos]
+
+    for prot in dic_prot:
+        if aa_pos in dic_prot[prot]:
+            print(prot)
+            start = int(dic_prot[prot].start)
+            print('Protein start in polyprotein: {}'.format(start))
+            print('Residue "{}" position in polyprotein: {}'.format(aa_ref, aa_pos))
+            pos_in_protein = aa_pos - start
+            print('Residue "{}" position in {} protein: {}'.format(aa_ref, prot, pos_in_protein))
+            neighbours = ref_polyprot.seq[aa_pos-5 : aa_pos +6]
+            print('Neighbouring residues ("{}" is in the middle): {}'.format(aa_ref, neighbours))
+            break
+
+
 
 """
 #######################################################################
