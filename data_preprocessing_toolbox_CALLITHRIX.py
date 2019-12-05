@@ -305,9 +305,11 @@ seq_ohe_df = one_hot_encoding(seq_df, file_path='../DATA/Callithrix_Analysis/DAT
 host_count = seq_df.groupby('Host')["ID"].count()
 host_count = host_count[["Alouatta", "Callithrix"]]
 host_count.name = "Number of Sequences"
-table_count1_latex = host_count.to_latex()
-with open('./tables/table_count1_latex.txt', 'w') as f:
-    f.write(table_count1_latex)
+host_count.to_csv('./OUTPUT/CAL_ALO_host_count.csv')
+
+# table_count1_latex = host_count.to_latex()
+# with open('./tables/table_count1_latex.txt', 'w') as f:
+#     f.write(table_count1_latex)
 
 listdf = []
 for host, host_data in seq_df.groupby('Host'):
@@ -319,6 +321,9 @@ for host, host_data in seq_df.groupby('Host'):
     #df.index = [host]
     #print(b)
 df = pd.concat(listdf)
-table_count2_latex = df.to_latex()
-with open('./tables/table_count2_latex.txt', 'w') as f:
-    f.write(table_count2_latex)
+df.to_csv('./OUTPUT/CAL_ALO_Ct_count.csv')
+
+
+# table_count2_latex = df.to_latex()
+# with open('./tables/table_count2_latex.txt', 'w') as f:
+#     f.write(table_count2_latex)

@@ -185,7 +185,8 @@ seq_df[seq_df["Host"] == "Human Serious or Fatal"]
 seq_ohe_df = one_hot_encoding(seq_df)
 
 seq_df_original.to_pickle('../DATA/Human_Analisys/DATA/human_YFV_original_seq_df.pkl')
-
+seq_ohe_df.to_pickle('../DATA/Human_Analisys/DATA/human_YFV_seq_ohe_df.pkl')
+seq_df.to_pickle('../DATA/Human_Analisys/DATA/human_YFV_seq_df.pkl')
 # Write report tables
 host_count = seq_df.groupby('Host')["ID"].count()
 host_count = host_count[["Human", "Human Serious or Fatal"]]

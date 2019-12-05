@@ -18,8 +18,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 
 from sklearn.model_selection import train_test_split, RandomizedSearchCV, GridSearchCV, StratifiedKFold
-from sklearn.metrics import roc_auc_score, roc_curve, auc
+from sklearn.metrics import roc_auc_score, roc_curve, auc, confusion_matrix
+from sklearn.utils.multiclass import unique_labels
 
+import pickle
 
 import shap
 
@@ -72,7 +74,7 @@ Classifiers
 XGBoost parameter tuning
 #######################################################################
 """
-def initial_xgb_model(X_train, y_train, X_test, y_test, scale_pos_weight):
+def initial_xgb_model(X_train, y_train, X_test, y_test, scale_pos_weight, analysis):
     # Initial XGB model
     initial_xgb = XGBClassifier(learning_rate=0.001,
                         colsample_bytree = 0.3,
@@ -109,7 +111,7 @@ def initial_xgb_model(X_train, y_train, X_test, y_test, scale_pos_weight):
 
     fig1.tight_layout();
 
-    fig1.savefig('./figures/human_human_initial_xgb_model.png', format='png', dpi=300, transparent=False)
+    fig1.savefig('./FIGURES/{}_XGB_initial.png'.format(analysis), format='png', dpi=300, transparent=False)
 
     return initial_xgb
 """
@@ -117,25 +119,27 @@ def initial_xgb_model(X_train, y_train, X_test, y_test, scale_pos_weight):
 Grid Search XGBoost
 #######################################################################
 """
-def grid_cv_xgb(X_train, y_train, scale_pos_weight, params, folds = 5):
+def grid_cv_xgb(X_train, y_train, scale_pos_weight, params, analysis, folds = 5):
     xgb = XGBClassifier(objective='binary:logistic', njobs=4, random_state=0, scale_pos_weight=scale_pos_weight)
 
     skf = StratifiedKFold(n_splits=folds, shuffle = True, random_state = 1001)
 
     grid = GridSearchCV(estimator=xgb,
                         param_grid=params,
-                        scoring='roc_auc',
+                        scoring='accuracy',
+                        return_train_score=True,
                         n_jobs=4,
                         cv=skf.split(X_train,y_train),
-                        verbose=3 )
+                        verbose=1,
+                        refit='accuracy')
 
     grid.fit(X_train, y_train)
 
     best_params = grid.best_params_
     results = pd.DataFrame(grid.cv_results_)
-    results.to_csv('xgb-grid-search-results-01.csv', index=False)
+    results.to_csv('{}_xgb-grid-search-results-01.csv'.format(analysis), index=False)
 
-    return (best_params, results)
+    return (grid)
 """
 #######################################################################
 Final XGBoost model
@@ -144,7 +148,7 @@ Use all training data.
 Test on test data.
 #######################################################################
 """
-def final_xgb(X_train, y_train, X_test, y_test, scale_pos_weight, best_params):
+def final_xgb(X_train, y_train, X_test, y_test, scale_pos_weight, best_params, analysis):
 
     xgb = XGBClassifier(**best_params)
     xgb.set_params(njobs=4,
@@ -157,7 +161,8 @@ def final_xgb(X_train, y_train, X_test, y_test, scale_pos_weight, best_params):
 
     xgb.fit(X_train, y_train,
             eval_metric=eval_metric,
-            eval_set=eval_set)
+            eval_set=eval_set,
+            verbose=0)
 
     results = xgb.evals_result()
 
@@ -178,7 +183,7 @@ def final_xgb(X_train, y_train, X_test, y_test, scale_pos_weight, best_params):
 
     fig1.tight_layout();
 
-    fig1.savefig('./figures/human_final_xgb_model.png', format='png', dpi=300, transparent=False)
+    fig1.savefig('./FIGURES/{}_final_xgb_model.png'.format(analysis), format='png', dpi=300, transparent=False)
 
     return xgb
 
@@ -196,17 +201,21 @@ def random_forest(X_train, y_train, X_test, y_test, cw, n=100):
 
     rf = RandomForestClassifier(n_estimators=n,
                                 random_state=0,
+                                max_features = 'auto',
+                                bootstrap=True,
                                 oob_score=True,
                                 class_weight={0:1, 1:cw})
 
     rf.fit(X_train, y_train)
 
-    y_pred = rf.predict(X_test)
+    y_pred_prob = rf.predict_proba(X_test)
 
-    false_positive_rate, true_positive_rate, thresholds = roc_curve(y_test, y_pred)
+    fpr, tpr, thresholds = roc_curve(y_test, y_pred_prob[:,1])
 
-    roc_auc = auc(false_positive_rate, true_positive_rate)
-    return (rf, roc_auc, rf.oob_score_)
+    roc_auc = roc_auc_score(y_test, y_pred_prob[:,1])
+    score = rf.score(X_test, y_test)
+
+    return (rf, roc_auc, rf.oob_score_, score, fpr, tpr)
 
 
 """
@@ -219,10 +228,32 @@ def logistic_regression(X_train, y_train, X, k=10):
 
     (e, ave_MSE, all_alphas, ave_alphas) = lr.LR_k_fold_CV(X_train, y_train, k)
 
-    normalized_alphas = lr.normalize_alphas(ave_alphas, X)
-    alphas = ohe_inverse_LR(normalized_alphas)
+    ohe_normalized_alphas = lr.normalize_alphas(ave_alphas, X)
+    alphas = ohe_inverse_LR(ohe_normalized_alphas)
 
-    return (alphas, e, ave_MSE)
+    #  Use ohe_normalized_alphas to predict
+    return (alphas, ohe_normalized_alphas, e, ave_MSE)
+
+"""
+#######################################################################
+Plot ROC
+#######################################################################
+"""
+def plot_roc(fpr, tpr, roc_auc, analysis, method, dataset='test_dataset'):
+    fig, axes = plt.subplots(figsize=(10, 8), nrows=1, ncols=1)
+    lw = 2
+    axes.plot(fpr, tpr, color='darkorange',
+             lw=lw, label='ROC curve (area ={0:.2f})'.format(roc_auc))
+    axes.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    axes.set_xlim(0.0, 1.0)
+    axes.set_ylim(0.0, 1.05)
+    axes.set_xlabel('False Positive Rate')
+    axes.set_ylabel('True Positive Rate')
+    axes.set_title('Receiver operating characteristic')
+    axes.legend(loc="lower right")
+    fig.show()
+    fig.savefig("./FIGURES/{0}_ROC_{1}_{2}.png".format(analysis, method, dataset), format='png', dpi=300, transparent=False)
+
 """
 #######################################################################
 Feature Importances
@@ -231,15 +262,15 @@ Feature Importances
 # load JS visualization code to notebook
 shap.initjs()
 
-def get_explainer(xgb, rf, X_train):
+def get_explainer(xgb, rf, X_explain):
     # Creates the explainer based on the model.
-    rf_explainer = shap.TreeExplainer(rf, data=X_train)
-    rf_shap_values = rf_explainer.shap_values(X_train)
+    rf_explainer = shap.TreeExplainer(rf, data=None)
+    rf_shap_values = rf_explainer.shap_values(X_explain)
     rf_shap_values = rf_shap_values[0] # For the random forest model, the shap TreeExplainer returns 2 sets of values, one for class 1 and one for class 0. They are symmetric, so you can use either.
 
     # Creates the explainer based on the model.
-    xgb_explainer = shap.TreeExplainer(xgb, data=X_train)
-    xgb_shap_values = xgb_explainer.shap_values(X_train)
+    xgb_explainer = shap.TreeExplainer(xgb, data=None)
+    xgb_shap_values = xgb_explainer.shap_values(X_explain)
 
 
 
@@ -350,7 +381,7 @@ Plot importances on genome
 #######################################################################
 """
 
-def plot_importances_genome(xgb_shap_values_df, rf_shap_values_df, alphas):
+def plot_importances_genome(xgb_shap_values_df, rf_shap_values_df, alphas, analysis):
 
     xgb_shap_values_df = np.abs(xgb_shap_values_df)
     xgb_shap_values_df = np.sum(xgb_shap_values_df, axis=0)
@@ -384,14 +415,14 @@ def plot_importances_genome(xgb_shap_values_df, rf_shap_values_df, alphas):
 
     fig.tight_layout();
 
-    fig.savefig('./figures/human_importances_1.png', format='png', dpi=300, transparent=False)
+    fig.savefig('./FIGURES/{}_overview_importances.png'.format(analysis), format='png', dpi=300, transparent=False)
 
 """
 #######################################################################
 Summary Plots
 #######################################################################
 """
-def importance_summary(xgb_shap_values_df, rf_shap_values_df, alphas):
+def importance_summary(xgb_shap_values_df, rf_shap_values_df, alphas, analysis):
     xgb_summary = get_sorted_importances(xgb_shap_values_df)
     rf_summary = get_sorted_importances(rf_shap_values_df)
     sorted_alphas = alphas.sort_values(ascending=False)
@@ -424,7 +455,7 @@ def importance_summary(xgb_shap_values_df, rf_shap_values_df, alphas):
 
     fig.tight_layout();
 
-    fig.savefig("./figures/human_fig_summary.png", format='png', dpi=300, transparent=False)
+    fig.savefig("./FIGURES/{}_summary.png".format(analysis), format='png', dpi=300, transparent=False)
 
     return (xgb_summary, rf_summary, sorted_alphas)
 
@@ -438,7 +469,7 @@ Merges into one array.
 Normalizes again.
 #######################################################################
 """
-def get_merged_results(xgb_summary, rf_summary, sorted_alphas, top=10):
+def get_merged_results(xgb_summary, rf_summary, sorted_alphas, analysis, top=10):
     xgb_summary_top = xgb_summary[:top]
     rf_summary_top = rf_summary[:top]
     sorted_alphas_top = sorted_alphas[:top]
@@ -464,6 +495,23 @@ def get_merged_results(xgb_summary, rf_summary, sorted_alphas, top=10):
     r_sum = results_all.sum()
     results_all = results_all/r_sum
     results_all = results_all.sort_values(ascending=False)
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 8), constrained_layout=True)
+
+    ax.barh(results_all.index[0:top], results_all[0:top])
+    ax.set_yticks(results_all.index[0:top])
+    ax.set_yticklabels(results_all.index[0:top])
+    ax.invert_yaxis()  # labels read top-to-bottom
+    ax.set_xlabel('Feature Importance')
+    # ax.set_title('HIV {} - {} most important genomic positions found by XGBoost, Random Forest and Modified Logistic Regression together.'.format(subtype, top))
+    ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+
+    fig.suptitle('Human Yellow Fever Infection Severity Analysis - {} most important genomic positions found by XGBoost, Random Forest and Modified Logistic Regression together.'.format(top), fontsize=16)
+
+    # fig.tight_layout();
+
+    fig.savefig("./FIGURES/{}_combined_{}_summary.png".format(analysis, top), format='png', dpi=300, transparent=False)
+
     return results_all
 
 """
@@ -473,7 +521,7 @@ Compare class 1 (high Ct) with class 0 (low Ct) and Alouatta samples.
 Returns a table with the comparisons for the most important nucleotide positions found by the 3 ML algorithms
 #######################################################################
 """
-def validate_SNV(seq_df, imp_merged):
+def validate_SNV(seq_df, imp_merged, size=15):
 
     # Serious human samples
     h1 = seq_df[seq_df["Class"]==1]
@@ -509,6 +557,8 @@ def validate_SNV(seq_df, imp_merged):
         for nn, count in nn_count_1.iteritems():
             if nn != nn_0:
                 seq_c1[col] = nn
+        if seq_c1[col] == '-':
+            seq_c1[col] = nn_0
 
     # Creates a dataframe comparing the results
     df1 = pd.DataFrame(seq_c0).T
@@ -516,13 +566,99 @@ def validate_SNV(seq_df, imp_merged):
 
     table = pd.concat([df1, df2], axis=0)
 
-    table = table.iloc[:, :15]
+    table = table.iloc[:, :size]
 
-    table_latex = table.to_latex()
-
-    return (table, table_latex)
+    return (table)
 
 """
+#######################################################################
+Plot confusion matrix
+#######################################################################
+"""
+def plot_confusion_matrix(y_true, y_pred, classes, method,
+                          dataset,
+                          analysis,
+                          normalize=False,
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    title='{} Confusion Matrix'.format(method)
+    # Compute confusion matrix
+    cm = confusion_matrix(y_true, y_pred)
+    # Only use the labels that appear in the data
+    # classes = classes[unique_labels(y_true, y_pred)]
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
+    # ax.figure.colorbar(im, ax=ax)
+    # We want to show all ticks...
+    ax.set(xticks=np.arange(cm.shape[1]),
+           yticks=np.arange(cm.shape[0]),
+           # ... and label them with the respective list entries
+           xticklabels=classes, yticklabels=classes,
+           title=title,
+           ylabel='True label',
+           xlabel='Predicted label')
+    ax.tick_params(grid_alpha=0)
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=0, ha="right",
+             rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations.
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            ax.text(j, i, format(cm[i, j], fmt),
+                    ha="center", va="center",
+                    color="white" if cm[i, j] > thresh else "black")
+    fig.tight_layout()
+    fig.savefig('./FIGURES/{}_confusion_{}_{}.png'.format(analysis, method, dataset), format='png', dpi=300, transparent=False)
+    return ax
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+#######################################################################
+MAIN
+#######################################################################
+""""""
+#######################################################################
+MAIN
+#######################################################################
+""""""
+#######################################################################
+MAIN
+#######################################################################
+""""""
+#######################################################################
+MAIN
+#######################################################################
+""""""
+#######################################################################
+MAIN
+#######################################################################
+""""""
 #######################################################################
 MAIN
 #######################################################################
@@ -533,17 +669,25 @@ MAIN
 #######################################################################
 """
 
+analysis = 'HUMAN'
 # Data inmport
 # %%
-pickle_ohe = '../Human_Analisys/DATA/human_YFV_seq_ohe_df.pkl'
-pickle_seqdf = '../Human_Analisys/DATA/human_YFV_seq_df.pkl'
-pickle_seqdforiginal = '../Human_Analisys/DATA/human_YFV_original_seq_df.pkl'
+pickle_ohe = '../DATA/Human_Analisys/DATA/human_YFV_seq_ohe_df.pkl'
+pickle_seqdf = '../DATA/Human_Analisys/DATA/human_YFV_seq_df.pkl'
+pickle_seqdforiginal = '../DATA/Human_Analisys/DATA/human_YFV_original_seq_df.pkl'
 
 (seq_df, ohe_df, seqdforiginal) = get_data(pickle_seqdf, pickle_ohe, pickle_seqdforiginal)
 
 # Prepare data for training and testing
 (X, y, X_train, X_test, y_train, y_test, scale_pos_weight) = get_train_test_split(ohe_df, test_size=0.1)
 
+# DataFrame to keep scores
+index_names = [['XGB', 'RF', 'MLR'], ['Test Dataset', 'Full Dataset']]
+multi_index = pd.MultiIndex.from_product(index_names, names=['Method', 'Dataset'])
+performance_df = pd.DataFrame(columns=['ROC-AUC', 'Accuracy', 'Precision'], index=multi_index)
+
+
+performance_df.to_csv('./OUTPUT/{}_PERFORMANCE_models.csv'.format(analysis), index=True)
 # Cell containing XGBoost Grid Search
 # %%
 # A parameter grid for XGBoost
@@ -569,22 +713,180 @@ pickle_seqdforiginal = '../Human_Analisys/DATA/human_YFV_original_seq_df.pkl'
 
 # Train models
 # %%
+"""XGB------------------------------------------------------------------------"""
+
+method = 'XGB'
+
 best_params = {'colsample_bytree': 0.3,
                'learning_rate': 0.001,
                'max_depth': 3,
-               'n_estimators': 50,
+               'n_estimators': 200,
                'subsample': 1.0}
 
-xgb = final_xgb(X_train, y_train, X_test, y_test, scale_pos_weight, best_params)
+xgb = final_xgb(X_train, y_train, X_test, y_test, scale_pos_weight, best_params, analysis)
 
-xgb.score(X, y)
+y_pred_prob_test = xgb.predict_proba(X_test)
+y_pred_prob_fulldataset = xgb.predict_proba(X)
 
-(rf, roc_auc, rf.oob_score_) = random_forest(X_train, y_train, X_test, y_test, scale_pos_weight, n=100)
-rf.oob_score_
+y_pred_test = xgb.predict(X_test)
+y_pred_fulldataset = xgb.predict(X)
 
-(alphas, e, ave_MSE) = logistic_regression(X_train, y_train, X, k=10)
-1-ave_MSE
+fpr_test, tpr_test, thresholds_test = roc_curve(y_test, y_pred_test)
+fpr_fulldataset, tpr_fulldataset, thresholds_fulldataset = roc_curve(y, y_pred_fulldataset)
 
+roc_auc_test = roc_auc_score(y_test, y_pred_test)
+fpr_test, tpr_test, thresholds_test = roc_curve(y_test, y_pred_test)
+roc_auc_fulldataset = roc_auc_score(y, y_pred_fulldataset)
+score_test = xgb.score(X_test, y_test)
+score_fulldataset = xgb.score(X, y)
+
+plot_roc(fpr_test, tpr_test, roc_auc_test, analysis, method, 'test_dataset')
+
+plot_roc(fpr_fulldataset, tpr_fulldataset, roc_auc_fulldataset, analysis, method, 'full_dataset')
+
+cm_test = confusion_matrix(y_test, y_pred_test)
+cm_fulldataset = confusion_matrix(y, y_pred_fulldataset)
+
+performance_df.loc[method, 'Test Dataset']['ROC-AUC'] = roc_auc_test
+performance_df.loc[method, 'Full Dataset']['ROC-AUC'] = roc_auc_fulldataset
+performance_df.loc[method, 'Test Dataset']['Accuracy'] = score_test
+performance_df.loc[method, 'Full Dataset']['Accuracy'] = score_fulldataset
+performance_df.loc[method, 'Test Dataset']['Precision'] = cm_test[1,1]/(cm_test[1,1] + cm_test[0,1])
+performance_df.loc[method, 'Full Dataset']['Precision'] = cm_fulldataset[1,1]/(cm_fulldataset[1,1] + cm_fulldataset[0,1])
+
+
+ax = plot_confusion_matrix(y_test, y_pred_test,
+                            ['Non-Severe', 'Severe'],
+                            method,
+                            'test_dataset',
+                            analysis,
+                            normalize=False,
+                            cmap=plt.cm.Blues)
+
+ax = plot_confusion_matrix(y, y_pred_fulldataset,
+                            ['Non-Severe', 'Severe'],
+                            method,
+                            'full_dataset',
+                            analysis,
+                            normalize=False,
+                            cmap=plt.cm.Blues)
+
+
+
+
+
+"""RF------------------------------------------------------------------------"""
+method = 'RF'
+
+(rf, roc_auc, rf.oob_score_, score, fpr, tpr) = random_forest(X_train, y_train, X_test, y_test, scale_pos_weight, n=100)
+
+y_pred_prob_test = rf.predict_proba(X_test)
+y_pred_prob_fulldataset = rf.predict_proba(X)
+
+y_pred_test = rf.predict(X_test)
+y_pred_fulldataset = rf.predict(X)
+
+fpr_test, tpr_test, thresholds_test = roc_curve(y_test, y_pred_test)
+fpr_fulldataset, tpr_fulldataset, thresholds_fulldataset = roc_curve(y, y_pred_fulldataset)
+
+roc_auc_test = roc_auc_score(y_test, y_pred_test)
+fpr_test, tpr_test, thresholds_test = roc_curve(y_test, y_pred_test)
+roc_auc_fulldataset = roc_auc_score(y, y_pred_fulldataset)
+score_test = rf.score(X_test, y_test)
+score_fulldataset = rf.score(X, y)
+
+plot_roc(fpr_test, tpr_test, roc_auc_test, analysis, method, 'test_dataset')
+
+plot_roc(fpr_fulldataset, tpr_fulldataset, roc_auc_fulldataset, analysis, method, 'full_dataset')
+
+y_pred_test = rf.predict(X_test)
+y_pred_fulldataset = rf.predict(X)
+
+cm_test = confusion_matrix(y_test, y_pred_test)
+cm_fulldataset = confusion_matrix(y, y_pred_fulldataset)
+
+performance_df.loc[method, 'Test Dataset']['ROC-AUC'] = roc_auc_test
+performance_df.loc[method, 'Full Dataset']['ROC-AUC'] = roc_auc_fulldataset
+performance_df.loc[method, 'Test Dataset']['Accuracy'] = score_test
+performance_df.loc[method, 'Full Dataset']['Accuracy'] = score_fulldataset
+performance_df.loc[method, 'Test Dataset']['Precision'] = cm_test[1,1]/(cm_test[1,1] + cm_test[0,1])
+performance_df.loc[method, 'Full Dataset']['Precision'] = cm_fulldataset[1,1]/(cm_fulldataset[1,1] + cm_fulldataset[0,1])
+
+ax = plot_confusion_matrix(y_test, y_pred_test,
+                            ['Non-Severe', 'Severe'],
+                            method,
+                            'test_dataset',
+                            analysis,
+                            normalize=False,
+                            cmap=plt.cm.Greens)
+
+ax = plot_confusion_matrix(y, y_pred_fulldataset,
+                            ['Non-Severe', 'Severe'],
+                            method,
+                            'full_dataset',
+                            analysis,
+                            normalize=False,
+                            cmap=plt.cm.Greens)
+
+"""MLR------------------------------------------------------------------------"""
+import Logistic_regression_modified as lr
+method = 'MLR'
+(alphas, ohe_normalized_alphas, e, ave_MSE) = logistic_regression(X_train, y_train, X, k=10)
+score = 1 - ave_MSE
+alphas_plot = lr.logistic_regression(X, y)
+alphas_plot.shape
+
+y_pred_prob_test, y_pred_test = lr.LR_predict(alphas_plot, X_test)
+X_test.drop('alpha_0', axis=1, inplace=True)
+y_pred_prob_fulldataset, y_pred_fulldataset = lr.LR_predict(alphas_plot, X)
+X.drop('alpha_0', axis=1, inplace=True)
+# y_pred_prob_xgb = xgb.predict_proba(X_test)
+
+score_test = 1 - sum(np.sqrt((y_pred_test - y_test)**2))/len(y_test)
+score_fulldataset = 1 - sum(np.sqrt((y_pred_fulldataset - y)**2))/len(y)
+
+fpr_test, tpr_test, thresholds_test = roc_curve(y_test, y_pred_test)
+fpr_fulldataset, tpr_fulldataset, thresholds_fulldataset = roc_curve(y, y_pred_fulldataset)
+
+roc_auc_test = roc_auc_score(y_test, y_pred_test)
+roc_auc_fulldataset = roc_auc_score(y, y_pred_fulldataset)
+
+plot_roc(fpr_test, tpr_test, roc_auc_test, analysis, method, 'test_dataset')
+
+plot_roc(fpr_fulldataset, tpr_fulldataset, roc_auc_fulldataset, analysis, method, 'full_dataset')
+
+cm_test = confusion_matrix(y_test, y_pred_test)
+cm_fulldataset = confusion_matrix(y, y_pred_fulldataset)
+
+performance_df.loc[method, 'Test Dataset']['ROC-AUC'] = roc_auc_test
+performance_df.loc[method, 'Full Dataset']['ROC-AUC'] = roc_auc_fulldataset
+performance_df.loc[method, 'Test Dataset']['Accuracy'] = score_test
+performance_df.loc[method, 'Full Dataset']['Accuracy'] = score_fulldataset
+performance_df.loc[method, 'Test Dataset']['Precision'] = cm_test[1,1]/(cm_test[1,1] + cm_test[0,1])
+performance_df.loc[method, 'Full Dataset']['Precision'] = cm_fulldataset[1,1]/(cm_fulldataset[1,1] + cm_fulldataset[0,1])
+
+ax = plot_confusion_matrix(y_test, y_pred_test,
+                            ['Non-Severe', 'Severe'],
+                            method,
+                            'test_dataset',
+                            analysis,
+                            normalize=False,
+                            cmap=plt.cm.Greys)
+
+ax = plot_confusion_matrix(y, y_pred_fulldataset,
+                            ['Non-Severe', 'Severe'],
+                            method,
+                            'full_dataset',
+                            analysis,
+                            normalize=False,
+                            cmap=plt.cm.Greys)
+
+
+"""
+#######################################################################
+SHAP
+#######################################################################
+"""
 # Use SHAP to explain models
 # %%
 (xgb_explainer, rf_explainer, xgb_shap_values, rf_shap_values) = get_explainer(xgb, rf, X_train)
@@ -609,10 +911,10 @@ Plot results
 """
 # Plot resulting feature importances
 # %%
-plot_importances_genome(xgb_shap_values_df, rf_shap_values_df, alphas)
+plot_importances_genome(xgb_shap_values_df, rf_shap_values_df, alphas, analysis)
 
 # Get importances values and genomic locations
-(xgb_summary, rf_summary, sorted_alphas) = importance_summary(xgb_shap_values_df, rf_shap_values_df, alphas)
+(xgb_summary, rf_summary, sorted_alphas) = importance_summary(xgb_shap_values_df, rf_shap_values_df, alphas, analysis)
 
 """
 #######################################################################
@@ -620,39 +922,24 @@ Analyze results
 #######################################################################
 """
 
-imp_merged = get_merged_results(xgb_summary, rf_summary, sorted_alphas, 30)
+imp_merged = get_merged_results(xgb_summary, rf_summary, sorted_alphas, analysis, 30)
 
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 8))
 
-ax.barh(imp_merged.index[0:30], imp_merged[0:30])
-ax.set_yticks(imp_merged.index[0:30])
-ax.set_yticklabels(imp_merged.index[0:30])
-ax.invert_yaxis()  # labels read top-to-bottom
-ax.set_xlabel('Feature Importance')
-ax.set_title('XGBoosting')
-ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-
-fig.tight_layout();
-
-fig.savefig("./figures/human_combined_30_summary.png", format='png', dpi=300, transparent=False)
 
 # The analysis below and the results shown in "table" demonstrate the power of XGBoost. It only picked 3 features, and there was a total of 5 that really had any informative value. All the rest, that both RF and LR gave some importance (albeit small), have no information at all, given that they do not contain a nucleotide that is different from the most frequent one in the other class and in the Alouatta samples.
-(table, table_latex) = validate_SNV(seq_df, imp_merged)
+(table) = validate_SNV(seq_df, imp_merged)
 
-# Requires usepackage{booktabs} on LaTex document
-with open('./tables/human_table1_latex.txt', 'w') as f:
-    f.write(table_latex)
-
+table.to_csv('./OUTPUT/{}_SNV.csv'.format(analysis))
 
 table_clean = table.copy()
 
 for col in table_clean.columns:
-    if '-' in table_clean.loc['Serious', col]:
+    if table_clean.loc['Non-serious', col] == table_clean.loc['Serious', col]:
         table_clean.drop(col, axis=1, inplace=True)
 
-table2_latex = table_clean.to_latex()
-with open('./tables/human_table2_latex.txt', 'w') as f:
-    f.write(table2_latex)
+table_clean.to_csv('./OUTPUT/{}_SNV_clean.csv'.format(analysis))
+
+
 
 
 snv_to_analyze = table_clean.loc['Serious', :]
@@ -661,13 +948,13 @@ snv_to_analyze = table_clean.loc['Serious', :]
 
 import ref_genome_polyprot_toolbox as g_tool
 
-dataset_file = '../Callithrix_Analysis/DATA/!CLEAN/ALL_YFV.aln'
-ref_genome_file = '../Callithrix_Analysis/DATA/!CLEAN/YFV_BeH655417_JF912190.gb'
-ref_polyprot_file = '../Callithrix_Analysis/DATA/!CLEAN/YFV_polyprotein_AFH35044.gp'
+dataset_file = '../DATA/Callithrix_Analysis/DATA/!CLEAN/ALL_YFV.aln'
+ref_genome_file = '../DATA/Callithrix_Analysis/DATA/!CLEAN/YFV_BeH655417_JF912190.gb'
+ref_polyprot_file = '../DATA/Callithrix_Analysis/DATA/!CLEAN/YFV_polyprotein_AFH35044.gp'
 
 (ref_genome, ref_polyprot, seq) = g_tool.read_data(ref_genome_file, ref_polyprot_file, dataset_file)
 
-querry_set = SeqIO.parse('../Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/YiBRAlibrary1_30012018.consensus.fasta', "fasta")
+querry_set = SeqIO.parse('../DATA/Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/YiBRAlibrary1_30012018.consensus.fasta', "fasta")
 first_record = next(querry_set)
 second_record = next(querry_set)
 seq = second_record.seq
@@ -706,6 +993,6 @@ for nn_pos, nn in snv_to_analyze.iteritems():
     report_dic[nn_pos] = df
 
 table3 = pd.concat(list(report_dic.values()))
-table3_latex = table3.to_latex()
-with open('./tables/human_table3_latex.txt', 'w') as f:
-    f.write(table3_latex)
+table3.to_csv('./OUTPUT/{}_SNV_proteins_info.csv'.format(analysis))
+
+performance_df.to_csv('./OUTPUT/{}_PERFORMANCE_models.csv'.format(analysis), index=True)
