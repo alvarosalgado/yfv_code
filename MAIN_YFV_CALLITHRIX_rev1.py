@@ -3,7 +3,6 @@
 From 'YFV_Ct_Callithrix_main_rev1.ipynb'
 """
 
-
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.Alphabet import IUPAC
@@ -677,7 +676,6 @@ def plot_confusion_matrix(y_true, y_pred, classes, method,
 
 
 
-
 """
 #######################################################################
 MAIN
@@ -967,6 +965,21 @@ SHAP
 (xgb_explainer, rf_explainer, xgb_shap_values, rf_shap_values) = get_explainer(xgb, rf, X)
 
 xgb_shap_values.shape
+rf_shap_values.shape
+
+with open('./OUTPUT/CAL_xgb_explainer.pickle.dat', 'wb') as f:
+    # Pickle the 'data' using the highest protocol available.
+    pickle.dump(xgb_explainer, f, pickle.HIGHEST_PROTOCOL)
+with open('./OUTPUT/CAL_rf_explainer.pickle.dat', 'wb') as f:
+    # Pickle the 'data' using the highest protocol available.
+    pickle.dump(rf_explainer, f, pickle.HIGHEST_PROTOCOL)
+with open('./OUTPUT/CAL_xgb_shap_values.pickle.dat', 'wb') as f:
+    # Pickle the 'data' using the highest protocol available.
+    pickle.dump(xgb_shap_values, f, pickle.HIGHEST_PROTOCOL)
+with open('./OUTPUT/CAL_rf_shap_values.pickle.dat', 'wb') as f:
+    # Pickle the 'data' using the highest protocol available.
+    pickle.dump(rf_shap_values, f, pickle.HIGHEST_PROTOCOL)
+
 rf_shap_values_df = pd.DataFrame(rf_shap_values,
                                 index=X.index,
                                 columns=X.columns)
