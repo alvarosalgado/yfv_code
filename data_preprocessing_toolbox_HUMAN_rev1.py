@@ -69,6 +69,7 @@ human_df.shape
 # check if there are only YFV samples
 human_df['Original_Lab_Results'].unique()
 
+# adjust nomenclature
 human_df.loc[human_df['YiBRA2_Library_Number'] == 'library 4', 'YiBRA2_Library_Number'] = 'library4'
 
 human_df.loc[human_df['YiBRA2_Library_Number'] == 'library 5', 'YiBRA2_Library_Number'] = 'library5'
