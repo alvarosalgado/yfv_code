@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-
+"""Esse é o mesmo do 'data_preprocessing_toolbox_HUMAN', exceto pela navegação de diretórios para os arquivos.
+Esse está desatualizado. Usar o outro."""
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.Alphabet import IUPAC

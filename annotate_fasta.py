@@ -47,6 +47,6 @@ try:
     if len(userParameters) == 2:
         sequence_annotator(userParameters[0], str(userParameters[1]))
     else:
-        print("There is a problem!")
+        print("There is a problem with the parameters")
 except:
-    print("There is a problem!")
+    print("There is a problem with an exception!")

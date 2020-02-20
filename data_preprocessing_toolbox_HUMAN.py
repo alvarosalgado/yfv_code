@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""
+#######################################################################
+
+- Specific for "YFV Human Severity investigation"
+
+- Read the fasta files containing the sequences' nucleotides and the excel files containing their metadata.
+- Clean the data.
+- Turn it into "one-hot encoded" data.
+- Save it to csv and pkl.
+
+- This is the same as 'data_preprocessing_YFV_rev1.ipynb', except for the markdown
+#######################################################################
+"""
 
 from Bio.Seq import Seq
 from Bio import SeqIO
