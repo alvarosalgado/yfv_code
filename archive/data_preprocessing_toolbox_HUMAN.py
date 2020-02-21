@@ -50,7 +50,9 @@ def one_hot_encoding(seq_df, file_path='../DATA/Human_Analisys/DATA/'):
     return seq_ohe_df
 
 
-# Read excel into a pd.DataFrame
+# Read metadata excel into a pd.DataFrame
+# This is for only one of the datasets in this case. 2018-01_Salvador
+# The other datasets, Talita and Marielton, are already identified as deaths or not.
 file = '../DATA/Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/YFV_Jan_2018_SampleList.xlsx'
 sample_list_excel = pd.read_excel(file, index_col='YiBRA_SSA_ID')
 

@@ -81,6 +81,8 @@ human_df.loc[human_df['YiBRA2_Library_Number'] == 'library 7', 'YiBRA2_Library_N
 """####################################"""
 
 # get all fasta files in a list
+# I do this basically to get the library names so I can regex them and link the metadata. Now that i included more samples from different datasets that do not follow this library logic, i will do a brute force solution and create a lis with all the library names and iterate over it.
+# Also, I have to think the best way to create the dataframe columns, i think i will only need the id and class. Maybe not even the id, since i can use the index.
 file_list = glob.glob("../DATA/Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/*.fasta")
 
 """####################################"""
