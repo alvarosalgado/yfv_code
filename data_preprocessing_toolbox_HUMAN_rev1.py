@@ -81,75 +81,56 @@ human_df.loc[human_df['YiBRA2_Library_Number'] == 'library 7', 'YiBRA2_Library_N
 """####################################"""
 
 # get all fasta files in a list
-# I do this basically to get the library names so I can regex them and link the metadata. Now that i included more samples from different datasets that do not follow this library logic, i will do a brute force solution and create a lis with all the library names and iterate over it.
+# I do this basically to get the library names so I can regex them and link the metadata. Now that i included more samples from different datasets that do not follow this library logic, i will do a brute force solution and create a list with all the library names and iterate over it.
 # Also, I have to think the best way to create the dataframe columns, i think i will only need the id and class. Maybe not even the id, since i can use the index.
 file_list = glob.glob("../DATA/Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/*.fasta")
 
+library_list = ['library{}'.format(n) for n in range(1, 8)]
 """####################################"""
 
+
+filename = "../DATA/Yibra.fasta"
+# create sequence DataFrame
+identifiers = [seq_rec.id for seq_rec in SeqIO.parse(filename, "fasta")]
+seqs = np.array([list(str(seq_rec.seq)) for seq_rec in SeqIO.parse(filename, "fasta")])
+cols = list(range(seqs.shape[1]))
+seq_df = pd.DataFrame(seqs, index=identifiers, columns=cols)
+seq_df.insert(0, 'Library', np.nan)
+seq_df.insert(1, 'BC', np.nan)
+seq_df.insert(2, 'ID', np.nan)
+seq_df.insert(3, 'Host', np.nan)
+seq_df.insert(4, 'Class', np.nan)
+
 # Parse fasta files to link sample metadata to DNA sequence
-pattern1 = 'library\d'
-regex1 = re.compile(pattern1)
+pattern_lib = 'library\d'
+regex_lib = re.compile(pattern_lib)
 
-seq_dict = {}
-for filename in file_list:
-    # Get file's library id
-    library = regex1.search(filename).group()
+pattern_bc = 'BC\d\d'
+regex_bc = re.compile(pattern_bc)
 
-    # create sequence DataFrame
-    identifiers = [seq_rec.id for seq_rec in SeqIO.parse(filename, "fasta")]
-    seqs = np.array([list(str(seq_rec.seq)) for seq_rec in SeqIO.parse(filename, "fasta")])
-    cols = list(range(seqs.shape[1]))
-    seq_df = pd.DataFrame(seqs, index=identifiers, columns=cols)
 
-    seq_df.insert(0, 'Library', np.nan)
-    seq_df.insert(1, 'BC', np.nan)
-    seq_df.insert(2, 'ID', np.nan)
-    seq_df.insert(3, 'Host', np.nan)
-    seq_df.insert(4, 'Class', np.nan)
 
-    pattern_bc = 'BC\d\d'
-    regex_bc = re.compile(pattern_bc)
+for index, sample in seq_df.iterrows():
+    library = regex_lib.search(str(index)).group()
+    bc = regex_bc.search(str(index)).group()
 
-    for index, sample in seq_df.iterrows():
-        bc = regex_bc.search(str(index)).group()
-        seq_df.loc[index, 'BC'] = bc
+    seq_df.loc[index, 'Library'] = library
+    seq_df.loc[index, 'BC'] = bc
 
-    seq_df['Library'] = library
-
-    seq_dict[library] = seq_df
-
-    # print(library)
-    # print(identifiers)
-
-# Now I have all sequences in dataframes that contain the "library" and "barcode" information.
-seq_dict['library4'].head(12)
-# Link the metadata in human_df to the sequences
-human_df.head()
-
+# Now go through metadata excel spreadsheet (in dataframe format)
+pattern_nb = '(NB)(\d\d)'
+regex_nb = re.compile(pattern_nb)
 for index, sample in human_df.iterrows():
-    # print(index)
+    # get the "library" info
     library = sample['YiBRA2_Library_Number']
-
-    pattern = '(NB)(\d\d)'
-    regex = re.compile(pattern)
     sample_NB = sample['YiBRA2_Barcode_Number']
-    NB_number = regex.search(sample_NB).group(2)
 
+    NB_number = regex_nb.search(sample_NB).group(2)
     barcode = 'BC'+NB_number
 
-    seq_df = seq_dict[library]
+    seq_df.loc[(seq_df['Library'] == library) & (seq_df['BC'] == barcode), "ID"] = sample.name
+    seq_df.loc[(seq_df['Library'] == library) & (seq_df['BC'] == barcode), "Host"] = sample['Host']
 
-    seq_df.loc[seq_df['BC'] == barcode, 'ID'] = sample.name
-    seq_df.loc[seq_df['BC'] == barcode, 'Host'] = sample['Host']
-
-seq_dict['library2'].head(12)
-
-list_seq_df = []
-for key in seq_dict:
-    list_seq_df.append(seq_dict[key])
-
-seq_df = pd.concat(list_seq_df)
 
 seq_df = seq_df[pd.notnull(seq_df['ID'])]
 
