@@ -52,49 +52,52 @@ def one_hot_encoding(seq_df, file_path='../DATA/Human_Analisys/DATA/'):
 
 # Read YiBRA samples excel into a pd.DataFrame
 file = '../DATA/Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/YFV_Jan_2018_SampleList.xlsx'
-sample_list_excel = pd.read_excel(file, index_col='YiBRA_SSA_ID')
+metadata_excel = pd.read_excel(file, index_col='YiBRA_SSA_ID')
 
 # Select only rows containing human samples
-human_df1 = sample_list_excel[sample_list_excel['Host']=='Human']
-human_df2 = sample_list_excel[sample_list_excel['Host']=='Human Serious or Fatal']
-human_df = pd.concat([human_df1, human_df2], axis=0)
+metadata1 = metadata_excel[metadata_excel['Host']=='Human']
+metadata2 = metadata_excel[metadata_excel['Host']=='Human Serious or Fatal']
+metadata = pd.concat([metadata1, metadata2], axis=0)
 
 # Remove samples that were not sequenced
-human_df = human_df[pd.notnull(human_df['YiBRA2_Library_Number'])]
+metadata = metadata[pd.notnull(metadata['YiBRA2_Library_Number'])]
 
-human_df.shape
+metadata.shape
 """####################################"""
 
 
 # check if there are only YFV samples
-human_df['Original_Lab_Results'].unique()
+metadata['Original_Lab_Results'].unique()
 
 # adjust nomenclature
-human_df.loc[human_df['YiBRA2_Library_Number'] == 'library 4', 'YiBRA2_Library_Number'] = 'library4'
+metadata.loc[metadata['YiBRA2_Library_Number'] == 'library 4', 'YiBRA2_Library_Number'] = 'library4'
 
-human_df.loc[human_df['YiBRA2_Library_Number'] == 'library 5', 'YiBRA2_Library_Number'] = 'library5'
+metadata.loc[metadata['YiBRA2_Library_Number'] == 'library 5', 'YiBRA2_Library_Number'] = 'library5'
 
-human_df.loc[human_df['YiBRA2_Library_Number'] == 'library 6', 'YiBRA2_Library_Number'] = 'library6'
+metadata.loc[metadata['YiBRA2_Library_Number'] == 'library 6', 'YiBRA2_Library_Number'] = 'library6'
 
-human_df.loc[human_df['YiBRA2_Library_Number'] == 'library 7', 'YiBRA2_Library_Number'] = 'library7'
+metadata.loc[metadata['YiBRA2_Library_Number'] == 'library 7', 'YiBRA2_Library_Number'] = 'library7'
 
 """####################################"""
 
 # get all fasta files in a list
 # I do this basically to get the library names so I can regex them and link the metadata. Now that i included more samples from different datasets that do not follow this library logic, i will do a brute force solution and create a list with all the library names and iterate over it.
 # Also, I have to think the best way to create the dataframe columns, i think i will only need the id and class. Maybe not even the id, since i can use the index.
-file_list = glob.glob("../DATA/Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/*.fasta")
+# file_list = glob.glob("../DATA/Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/*.fasta")
 
 library_list = ['library{}'.format(n) for n in range(1, 8)]
 """####################################"""
 
 """
-YiBRA dataset
+FULL dataset
 """
-filename = "../DATA/Yibra.fasta"
+filename = "../DATA/human_2.fasta"
 # create sequence DataFrame
 identifiers = [seq_rec.id for seq_rec in SeqIO.parse(filename, "fasta")]
 seqs = np.array([list(str(seq_rec.seq)) for seq_rec in SeqIO.parse(filename, "fasta")])
+
+seqs.shape
+seqs[1][0]
 cols = list(range(seqs.shape[1]))
 seq_df_yibra = pd.DataFrame(seqs, index=identifiers, columns=cols)
 seq_df_yibra.insert(0, 'Library', np.nan)
