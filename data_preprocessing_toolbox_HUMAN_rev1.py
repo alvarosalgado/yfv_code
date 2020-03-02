@@ -50,7 +50,7 @@ def one_hot_encoding(seq_df, file_path='../DATA/Human_Analisys/DATA/'):
     return seq_ohe_df
 
 
-# Read excel into a pd.DataFrame
+# Read YiBRA samples excel into a pd.DataFrame
 file = '../DATA/Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/YFV_Jan_2018_SampleList.xlsx'
 sample_list_excel = pd.read_excel(file, index_col='YiBRA_SSA_ID')
 
@@ -88,18 +88,20 @@ file_list = glob.glob("../DATA/Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/*.
 library_list = ['library{}'.format(n) for n in range(1, 8)]
 """####################################"""
 
-
+"""
+YiBRA dataset
+"""
 filename = "../DATA/Yibra.fasta"
 # create sequence DataFrame
 identifiers = [seq_rec.id for seq_rec in SeqIO.parse(filename, "fasta")]
 seqs = np.array([list(str(seq_rec.seq)) for seq_rec in SeqIO.parse(filename, "fasta")])
 cols = list(range(seqs.shape[1]))
-seq_df = pd.DataFrame(seqs, index=identifiers, columns=cols)
-seq_df.insert(0, 'Library', np.nan)
-seq_df.insert(1, 'BC', np.nan)
-seq_df.insert(2, 'ID', np.nan)
-seq_df.insert(3, 'Host', np.nan)
-seq_df.insert(4, 'Class', np.nan)
+seq_df_yibra = pd.DataFrame(seqs, index=identifiers, columns=cols)
+seq_df_yibra.insert(0, 'Library', np.nan)
+seq_df_yibra.insert(1, 'BC', np.nan)
+seq_df_yibra.insert(2, 'ID', np.nan)
+seq_df_yibra.insert(3, 'Host', np.nan)
+seq_df_yibra.insert(4, 'Class', np.nan)
 
 # Parse fasta files to link sample metadata to DNA sequence
 pattern_lib = 'library\d'
@@ -110,12 +112,12 @@ regex_bc = re.compile(pattern_bc)
 
 
 
-for index, sample in seq_df.iterrows():
+for index, sample in seq_df_yibra.iterrows():
     library = regex_lib.search(str(index)).group()
     bc = regex_bc.search(str(index)).group()
 
-    seq_df.loc[index, 'Library'] = library
-    seq_df.loc[index, 'BC'] = bc
+    seq_df_yibra.loc[index, 'Library'] = library
+    seq_df_yibra.loc[index, 'BC'] = bc
 
 # Now go through metadata excel spreadsheet (in dataframe format)
 pattern_nb = '(NB)(\d\d)'
@@ -128,16 +130,30 @@ for index, sample in human_df.iterrows():
     NB_number = regex_nb.search(sample_NB).group(2)
     barcode = 'BC'+NB_number
 
-    seq_df.loc[(seq_df['Library'] == library) & (seq_df['BC'] == barcode), "ID"] = sample.name
-    seq_df.loc[(seq_df['Library'] == library) & (seq_df['BC'] == barcode), "Host"] = sample['Host']
+    seq_df_yibra.loc[(seq_df_yibra['Library'] == library) & (seq_df_yibra['BC'] == barcode), "ID"] = sample.name
+    seq_df_yibra.loc[(seq_df_yibra['Library'] == library) & (seq_df_yibra['BC'] == barcode), "Host"] = sample['Host']
 
 
-seq_df = seq_df[pd.notnull(seq_df['ID'])]
+# Select only those that have IDs
+seq_df_yibra = seq_df_yibra[pd.notnull(seq_df_yibra['ID'])]
 
-seq_df_original = seq_df.copy()
-seq_df_original.shape
+# seq_df_original = seq_df.copy()
+# seq_df_original.shape
+#
+# seq_df = seq_df_original.copy()
 
-seq_df = seq_df_original.copy()
+
+
+"""
+Data Cleaning
+"""
+
+
+
+
+
+
+
 """
 Data Cleaning
 """
