@@ -91,21 +91,21 @@ library_list = ['library{}'.format(n) for n in range(1, 8)]
 """
 FULL dataset
 """
-filename = "../DATA/human_2.fasta"
+filename = "../DATA/human_3.fasta"
 # create sequence DataFrame
 identifiers = [seq_rec.id for seq_rec in SeqIO.parse(filename, "fasta")]
 seqs = np.array([list(str(seq_rec.seq)) for seq_rec in SeqIO.parse(filename, "fasta")])
 
 seqs.shape
-seqs[1][0]
 cols = list(range(seqs.shape[1]))
-seq_df_yibra = pd.DataFrame(seqs, index=identifiers, columns=cols)
-seq_df_yibra.insert(0, 'Library', np.nan)
-seq_df_yibra.insert(1, 'BC', np.nan)
-seq_df_yibra.insert(2, 'ID', np.nan)
-seq_df_yibra.insert(3, 'Host', np.nan)
-seq_df_yibra.insert(4, 'Class', np.nan)
+seq_df = pd.DataFrame(seqs, index=identifiers, columns=cols)
+seq_df.insert(0, 'Library', np.nan)
+seq_df.insert(1, 'BC', np.nan)
+seq_df.insert(2, 'ID', np.nan)
+seq_df.insert(3, 'Host', np.nan)
+seq_df.insert(4, 'Class', np.nan)
 
+seq_df.head()
 # Parse fasta files to link sample metadata to DNA sequence
 pattern_lib = 'library\d'
 regex_lib = re.compile(pattern_lib)
@@ -115,12 +115,25 @@ regex_bc = re.compile(pattern_bc)
 
 
 
-for index, sample in seq_df_yibra.iterrows():
-    library = regex_lib.search(str(index)).group()
-    bc = regex_bc.search(str(index)).group()
+for index, sample in seq_df.iterrows():
+    library = "empty"
+    bc = "empty"
+    if regex_lib.search(str(index)):
+        library = regex_lib.search(str(index)).group()
+    if regex_bc.search(str(index)):
+        bc = regex_bc.search(str(index)).group()
 
-    seq_df_yibra.loc[index, 'Library'] = library
-    seq_df_yibra.loc[index, 'BC'] = bc
+    seq_df.loc[index, 'Library'] = library
+    seq_df.loc[index, 'BC'] = bc
+
+seq_df.head(100)
+
+'''
+I think I'll have to work on the separate datasets first.
+Now that I have them all alligned, I will separate the 4 datasets on AliView before importing.
+'''
+
+
 
 # Now go through metadata excel spreadsheet (in dataframe format)
 pattern_nb = '(NB)(\d\d)'
@@ -133,12 +146,12 @@ for index, sample in human_df.iterrows():
     NB_number = regex_nb.search(sample_NB).group(2)
     barcode = 'BC'+NB_number
 
-    seq_df_yibra.loc[(seq_df_yibra['Library'] == library) & (seq_df_yibra['BC'] == barcode), "ID"] = sample.name
-    seq_df_yibra.loc[(seq_df_yibra['Library'] == library) & (seq_df_yibra['BC'] == barcode), "Host"] = sample['Host']
+    seq_df.loc[(seq_df['Library'] == library) & (seq_df['BC'] == barcode), "ID"] = sample.name
+    seq_df.loc[(seq_df['Library'] == library) & (seq_df['BC'] == barcode), "Host"] = sample['Host']
 
 
 # Select only those that have IDs
-seq_df_yibra = seq_df_yibra[pd.notnull(seq_df_yibra['ID'])]
+# seq_df = seq_df[pd.notnull(seq_df['ID'])]
 
 # seq_df_original = seq_df.copy()
 # seq_df_original.shape
