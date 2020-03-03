@@ -246,6 +246,7 @@ Data Cleaning
 
 dataframes = [seq_df_yibra, seq_df_mari, seq_df_tcura, seq_df_tob]
 seq_df = pd.concat(dataframes)
+seq_df_original = seq_df.copy()
 
 print("We initially have {0} samples with {1} nucleotides".format(seq_df.shape[0], seq_df.shape[1]))
 
@@ -287,7 +288,7 @@ print("We are left with:\n\t{0} non-severe\n\t{1} severe/fatal".format(class0, c
 
 seq_ohe_df = one_hot_encoding(seq_df)
 
-# seq_df_original.to_pickle('../DATA/Human_Analisys/DATA/human_YFV_original_seq_df.pkl')
+seq_df_original.to_pickle('../DATA/Human_Analisys/DATA/human_YFV_original_seq_df.pkl')
 seq_ohe_df.to_pickle('../DATA/Human_Analisys/DATA/human_YFV_seq_ohe_df.pkl')
 seq_df.to_pickle('../DATA/Human_Analisys/DATA/human_YFV_seq_df.pkl')
 # Write report tables
@@ -301,3 +302,5 @@ seq_df.to_pickle('../DATA/Human_Analisys/DATA/human_YFV_seq_df.pkl')
 #     f.write(table_human_count1_latex)
 
 seq_ohe_df.shape
+seq_df_original.shape
+seq_df.shape
