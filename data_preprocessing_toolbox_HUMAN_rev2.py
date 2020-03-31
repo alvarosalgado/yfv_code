@@ -24,27 +24,23 @@ import seaborn as sns; sns.set_style("whitegrid")
 
 import re
 import glob
+import datetime
 
 """
 #######################################################################
 functions
 #######################################################################
 """
-def one_hot_encoding(seq_df, file_path='../DATA/Human_Analisys/DATA/'):
+def one_hot_encoding(seq_df):
 
     nucleotides_df = seq_df.iloc[:, 6:]
     metadata_df = seq_df.iloc[:, :6]
 
     seq_ohe_df = pd.get_dummies(nucleotides_df)
+    seq_ohe_df.apply(pd.to_numeric)
 
     dataframes = [metadata_df, seq_ohe_df]
     seq_ohe_df = pd.concat(dataframes, axis=1)
-
-    seq_ohe_df.to_csv(file_path + 'human_YFV_seq_ohe_df.csv', index=True, header=True, decimal='.', sep=',', float_format='%.2f')
-
-    seq_ohe_df.to_pickle(file_path + 'human_YFV_seq_ohe_df.pkl')
-
-    seq_df.to_pickle(file_path + 'human_YFV_seq_df.pkl')
 
     return seq_ohe_df
 
@@ -54,14 +50,21 @@ def one_hot_encoding(seq_df, file_path='../DATA/Human_Analisys/DATA/'):
 Yibra Dataset
 #######################################################################
 """
+with open('./OUTPUT/log_preprocessing.txt', 'w') as log:
+    x = datetime.datetime.now()
+    log.write('LOG file for data preprocessing\n{0}\n\n'.format(x))
+
 # Read YiBRA samples excel into a pd.DataFrame
 file = '../DATA/Human_Analisys/DATA/2018-01_Salvador/CONSENSUS/YFV_Jan_2018_SampleList.xlsx'
 metadata_excel = pd.read_excel(file, index_col='YiBRA_SSA_ID')
+metadata_excel['Host'].unique()
 
 # Select only rows containing human samples
 metadata1 = metadata_excel[metadata_excel['Host']=='Human']
 metadata2 = metadata_excel[metadata_excel['Host']=='Human Serious or Fatal']
-metadata = pd.concat([metadata1, metadata2], axis=0)
+metadata3 = metadata_excel[metadata_excel['Host']=='Human Grave']
+
+metadata = pd.concat([metadata1, metadata2, metadata3], axis=0)
 
 # Remove samples that were not sequenced
 metadata = metadata[pd.notnull(metadata['YiBRA2_Library_Number'])]
@@ -72,6 +75,7 @@ metadata.shape
 
 # check if there are only YFV samples
 metadata['Original_Lab_Results'].unique()
+metadata['Host'].unique()
 
 # adjust nomenclature
 metadata.loc[metadata['YiBRA2_Library_Number'] == 'library 4', 'YiBRA2_Library_Number'] = 'library4'
@@ -90,13 +94,13 @@ metadata.loc[metadata['YiBRA2_Library_Number'] == 'library 7', 'YiBRA2_Library_N
 library_list = ['library{}'.format(n) for n in range(1, 8)]
 
 # Open the fasta file
-filename = "../DATA/Yibra.fasta"
+filename = "../DATA/Human_Analisys/DATA/Yibra.fasta"
 # create sequence DataFrame
 identifiers = [seq_rec.id for seq_rec in SeqIO.parse(filename, "fasta")]
 seqs = np.array([list(str(seq_rec.seq)) for seq_rec in SeqIO.parse(filename, "fasta")])
-
 seqs.shape
 cols = list(range(seqs.shape[1]))
+
 seq_df_yibra = pd.DataFrame(seqs, index=identifiers, columns=cols)
 seq_df_yibra.insert(0, 'Library', 'library')
 seq_df_yibra.insert(1, 'BC', 'bc')
@@ -105,7 +109,8 @@ seq_df_yibra.insert(3, 'Host', 'host')
 seq_df_yibra.insert(4, 'Class', 'class')
 seq_df_yibra.insert(5, 'Dataset', 'dataset')
 
-# Parse fasta files to link sample metadata to DNA sequence
+# Custom made code to deal especifically with YIBRA dataset, which has "library" and "barcode" as its identifiers in the index (in the fasta ID), which I'll uso to link the metadata spreadsheet.
+#Parse fasta files to link sample metadata to DNA sequence
 pattern_lib = 'library\d'
 regex_lib = re.compile(pattern_lib)
 
@@ -146,6 +151,7 @@ seq_df_yibra = seq_df_yibra.loc[seq_df_yibra['ID'] != 'id', :]
 seq_df_yibra.loc[:, 'Class'] = 0
 seq_df_yibra.loc[seq_df_yibra['Host'] == 'Human Serious or Fatal', 'Class'] = 1
 seq_df_yibra.loc[:, 'Dataset'] = 'Yibra'
+seq_df_yibra.shape
 # seq_df_yibra_original = seq_df_yibra.copy()
 # seq_df_yibra_original.shape
 #
@@ -163,7 +169,7 @@ Marielton Dataset
 """
 
 # Open the fasta file
-filename = "../DATA/Marielton.fasta"
+filename = "../DATA/Human_Analisys/DATA/Marielton.fasta"
 # create sequence DataFrame
 identifiers = [seq_rec.id for seq_rec in SeqIO.parse(filename, "fasta")]
 seqs = np.array([list(str(seq_rec.seq)) for seq_rec in SeqIO.parse(filename, "fasta")])
@@ -191,7 +197,7 @@ Talita Cura Dataset
 """
 
 # Open the fasta file
-filename = "../DATA/Talita_cura.fasta"
+filename = "../DATA/Human_Analisys/DATA/Talita_cura.fasta"
 # create sequence DataFrame
 identifiers = [seq_rec.id for seq_rec in SeqIO.parse(filename, "fasta")]
 seqs = np.array([list(str(seq_rec.seq)) for seq_rec in SeqIO.parse(filename, "fasta")])
@@ -219,7 +225,7 @@ Talita Obitos Dataset
 """
 
 # Open the fasta file
-filename = "../DATA/Talita_obitos.fasta"
+filename = "../DATA/Human_Analisys/DATA/Talita_obitos.fasta"
 # create sequence DataFrame
 identifiers = [seq_rec.id for seq_rec in SeqIO.parse(filename, "fasta")]
 seqs = np.array([list(str(seq_rec.seq)) for seq_rec in SeqIO.parse(filename, "fasta")])
@@ -242,47 +248,91 @@ seq_df_tob.loc[:, 'Dataset'] = 'T_obitos'
 
 """
 Data Cleaning
+
+Here I need to choose which datasets I'll use. Since Talita's dataset might not be available to me, I'll first use it only as validation.
 """
 
+# dataframes = [seq_df_yibra, seq_df_mari]
 dataframes = [seq_df_yibra, seq_df_mari, seq_df_tcura, seq_df_tob]
+#dataframes = [seq_df_yibra]
+
 seq_df = pd.concat(dataframes)
 seq_df_original = seq_df.copy()
 
-print("We initially have {0} samples with {1} nucleotides".format(seq_df.shape[0], seq_df.shape[1]))
+with open('./OUTPUT/log_preprocessing.txt', 'a') as log:
+    x = datetime.datetime.now()
+    log.write('{2}\nWe initially have:\n\t{0} samples\n\t{1} nucleotides\n\n'.format(seq_df.shape[0],seq_df.shape[1]-6,x))
 
 
 
 """
 Data Cleaning
 """
+seq_df.groupby("Dataset").count()
+n_mari = seq_df.groupby("Dataset").count().iloc[0,0]
+n_yibr = seq_df.groupby("Dataset").count().iloc[3,0]
+n_tc = seq_df.groupby("Dataset").count().iloc[1,0]
+n_to = seq_df.groupby("Dataset").count().iloc[2,0]
+
+with open('./OUTPUT/log_preprocessing.txt', 'a') as log:
+    x = datetime.datetime.now()
+    log.write('{4}\nInitial distribution:\n\t{0} Marielton sequences\n\t{1} Yibra sequences\n\t{2} Talita Cura sequences\n\t{3} Talita Obitos sequences\n\n'.format(n_mari, n_yibr, n_tc, n_to, x))
 
 
+
+# Replace non sequenced positions with np.nan
 seq_df.replace('N', np.nan, inplace=True)
 seq_df.replace('-', np.nan, inplace=True)
 
 # Remove all sequences that contain more than 10% gaps or "N".
-threshold = int(seq_df.shape[1]*0.9)
+threshold = int((seq_df.shape[1]-6)*0.9)
 seq_df.dropna(axis=0, how='any', thresh=threshold, inplace=True)
 
-print("After removing samples with more than 10% empty positions, we have {0} samples with {1} nucleotides".format(seq_df.shape[0], seq_df.shape[1]))
+with open('./OUTPUT/log_preprocessing.txt', 'a') as log:
+    x = datetime.datetime.now()
+    log.write('{2}\nAfter removing samples with more than 10% empty positions, we have\n\t{0} samples\n\t{1} nucleotides\n\n'.format(seq_df.shape[0], seq_df.shape[1]-6, x))
+
+
+seq_df.groupby("Dataset").count()
+n_mari = seq_df.groupby("Dataset").count().iloc[0,0]
+n_yibr = seq_df.groupby("Dataset").count().iloc[3,0]
+n_tc = seq_df.groupby("Dataset").count().iloc[1,0]
+n_to = seq_df.groupby("Dataset").count().iloc[2,0]
+
+with open('./OUTPUT/log_preprocessing.txt', 'a') as log:
+    x = datetime.datetime.now()
+    log.write('{4}\nNew distribution:\n\t{0} Marielton sequences\n\t{1} Yibra sequences\n\t{2} Talita Cura sequences\n\t{3} Talita Obitos sequences\n\n'.format(n_mari, n_yibr, n_tc, n_to, x))
+
 
 # Removes all columns (positions) that contain any gap or "N"
 seq_df.dropna(axis=1, how='any', inplace=True)
 
-print("After dropping ALL columns with ANY empty positions, we have {0} samples with {1} nucleotides".format(seq_df.shape[0], seq_df.shape[1]))
+with open('./OUTPUT/log_preprocessing.txt', 'a') as log:
+    x = datetime.datetime.now()
+    log.write('{2}\nAfter dropping ALL columns with ANY empty positions, we have:\n\t{0} samples\n\t{1} nucleotides\n\n'.format(seq_df.shape[0], seq_df.shape[1]-6, x))
+
 
 # Removes all columns that do not contain variation in the nucleotide, i.e., that are the same for all sequences.
-for col in seq_df.columns:
+
+
+for col in seq_df.columns[6:]:
     if seq_df[col].nunique() == 1:
         seq_df.drop(col, axis=1, inplace=True)
 
-print("After removing columns in which there is no variation, we have:\n{0} samples X {1} nucleotides".format(seq_df.shape[0], seq_df.shape[1]))
+with open('./OUTPUT/log_preprocessing.txt', 'a') as log:
+    x = datetime.datetime.now()
+    log.write('{2}\nAfter removing columns in which there is no variation, we have:\n\t{0} samples\n\t{1} nucleotides\n\n'.format(seq_df.shape[0], seq_df.shape[1]-6, x))
 
 
 
 # How many sequences of each group are we left with?
 class0 = seq_df.groupby('Class').count().iloc[0,0]
 class1 = seq_df.groupby('Class').count().iloc[1,0]
+
+with open('./OUTPUT/log_preprocessing.txt', 'a') as log:
+    x = datetime.datetime.now()
+    log.write('{2}\nWe are left with:\n\t{0} non-severe\n\t{1} severe/fatal'.format(class0, class1, x))
+
 print("We are left with:\n\t{0} non-severe\n\t{1} severe/fatal".format(class0, class1))
 
 
@@ -291,6 +341,16 @@ seq_ohe_df = one_hot_encoding(seq_df)
 seq_df_original.to_pickle('../DATA/Human_Analisys/DATA/human_YFV_original_seq_df.pkl')
 seq_ohe_df.to_pickle('../DATA/Human_Analisys/DATA/human_YFV_seq_ohe_df.pkl')
 seq_df.to_pickle('../DATA/Human_Analisys/DATA/human_YFV_seq_df.pkl')
+
+
+# seq_ohe_df.to_csv(file_path + filename + '_ohe.csv', index=True, header=True, decimal='.', sep=',', float_format='%.2f')
+#
+# seq_ohe_df.to_pickle(file_path + filename + '_ohe.pkl')
+#
+# seq_df.to_pickle(file_path + filename + '_dataframe.pkl')
+#
+# seq_df_original.to_pickle(file_path + filename + '_original.pkl')
+
 # Write report tables
 # host_count = seq_df.groupby('Host')["ID"].count()
 # host_count = host_count[["Human", "Human Serious or Fatal"]]

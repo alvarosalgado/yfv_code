@@ -48,7 +48,7 @@ Since the dataset is small and imbalanced, I will separate only 10% for testing.
 """
 def get_train_test_split(ohe_df, test_size=0.1):
     # Get only the ohe nucleotide info in X
-    X = ohe_df.drop(["Library", "BC", "ID", "Host", "Class"], axis=1)
+    X = ohe_df.drop(["Library", "BC", "ID", "Host", "Class", "Dataset"], axis=1)
     # The target class is Ct_Group (high or low)
     y = ohe_df["Class"]
 
@@ -135,9 +135,9 @@ def grid_cv_xgb(X_train, y_train, scale_pos_weight, params, analysis, folds = 5)
 
     grid.fit(X_train, y_train)
 
-    best_params = grid.best_params_
-    results = pd.DataFrame(grid.cv_results_)
-    results.to_csv('{}_xgb-grid-search-results-01.csv'.format(analysis), index=False)
+    # best_params = grid.best_params_
+    # results = pd.DataFrame(grid.cv_results_)
+    # results.to_csv('{}_xgb-grid-search-results-01.csv'.format(analysis), index=False)
 
     return (grid)
 """
@@ -668,6 +668,10 @@ MAIN
 MAIN
 #######################################################################
 """
+with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'w') as log:
+    x = datetime.datetime.now()
+    log.write('LOG file for YFV Human Analysis\n{0}\n\n'.format(x))
+
 
 analysis = 'HUMAN'
 # Data inmport
@@ -678,8 +682,34 @@ pickle_seqdforiginal = '../DATA/Human_Analisys/DATA/human_YFV_original_seq_df.pk
 
 (seq_df, ohe_df, seqdforiginal) = get_data(pickle_seqdf, pickle_ohe, pickle_seqdforiginal)
 
+
+# Select which part of the dataset I'll use
+# %%
+ohe_df_yibra = ohe_df.loc[ohe_df["Dataset"] == "Yibra", :]
+ohe_df_yibra["Class"].sum()
+
+ohe_df_mari = ohe_df.loc[ohe_df["Dataset"] == "Marielton", :]
+ohe_df_mari["Class"].sum()
+
+ohe_df_tcura = ohe_df.loc[ohe_df["Dataset"] == "T_cura", :]
+ohe_df_tcura["Class"].sum()
+
+ohe_df_tob = ohe_df.loc[ohe_df["Dataset"] == "T_obitos", :]
+ohe_df_tob["Class"].sum()
+
+dataframes = [ohe_df_yibra, ohe_df_mari]
+ohe_df_use = pd.concat(dataframes)
+
+
 # Prepare data for training and testing
-(X, y, X_train, X_test, y_train, y_test, scale_pos_weight) = get_train_test_split(ohe_df, test_size=0.1)
+# %%
+(X, y, X_train, X_test, y_train, y_test, scale_pos_weight) = get_train_test_split(ohe_df_use, test_size=0.5)
+
+y.shape
+y.sum()
+
+y_train.shape
+y_train.sum()
 
 # DataFrame to keep scores
 index_names = [['XGB', 'RF', 'MLR'], ['Test Dataset', 'Full Dataset']]
@@ -690,24 +720,26 @@ performance_df = pd.DataFrame(columns=['ROC-AUC', 'Accuracy', 'Precision'], inde
 performance_df.to_csv('./OUTPUT/{}_PERFORMANCE_models.csv'.format(analysis), index=True)
 # Cell containing XGBoost Grid Search
 # %%
-# A parameter grid for XGBoost
-# params = {
-#         'subsample': [1.0],
-#         'colsample_bytree': [0.3, 0.8],
-#         'max_depth': [3, 5, 10],
-#         'learning_rate': [0.001, 0.1, 1],
-#         'n_estimators': [50, 250, 10000]
-#         }
-#
-# (best_params, results) = grid_cv_xgb(X_train, y_train, scale_pos_weight, params, folds = 5)
-#
-# results["mean_test_score"].unique()
+#A parameter grid for XGBoost
+params = {
+        'subsample': [1],
+        'colsample_bytree': [0.3],
+        'max_depth': [3, 50],
+        'learning_rate': [0.0001, 0.1, 1],
+        'n_estimators': [100, 10000]
+        }
+
+grid = grid_cv_xgb(X_train, y_train, scale_pos_weight, params, analysis, folds = 5)
+best_params = grid.best_params_
+results = pd.DataFrame(grid.cv_results_)
+results.to_csv('{}_xgb-grid-search-results-01.csv'.format(analysis), index=False)
+results["mean_test_score"].unique()
 # all parameter combinations resulted in the same score...
 
-# params_series = results.loc[results['mean_test_score'] == np.max(results['mean_test_score']), 'params']
-# for p in params_series:
-#     print(p)
-#
+params_series = results.loc[results['mean_test_score'] == np.max(results['mean_test_score']), 'params']
+for p in params_series:
+    print(p)
+
 # best_params = params_series.iloc[2]
 
 
@@ -717,26 +749,36 @@ performance_df.to_csv('./OUTPUT/{}_PERFORMANCE_models.csv'.format(analysis), ind
 
 method = 'XGB'
 
-best_params = {'colsample_bytree': 0.3,
-               'learning_rate': 0.001,
-               'max_depth': 3,
-               'n_estimators': 200,
-               'subsample': 1.0}
+# best_params = {'colsample_bytree': 0.3,
+#                'learning_rate': 0.001,
+#                'max_depth': 3,
+#                'n_estimators': 200,
+#                'subsample': 1.0}
 
 xgb = final_xgb(X_train, y_train, X_test, y_test, scale_pos_weight, best_params, analysis)
 
-y_pred_prob_test = xgb.predict_proba(X_test)
-y_pred_prob_fulldataset = xgb.predict_proba(X)
+y_pred_prob_test = np.array(xgb.predict_proba(X_test))
+y_pred_prob_test[:,1]
+y_pred_prob_fulldataset = np.array(xgb.predict_proba(X))
 
 y_pred_test = xgb.predict(X_test)
 y_pred_fulldataset = xgb.predict(X)
 
-fpr_test, tpr_test, thresholds_test = roc_curve(y_test, y_pred_test)
-fpr_fulldataset, tpr_fulldataset, thresholds_fulldataset = roc_curve(y, y_pred_fulldataset)
+print(y_pred_prob_test)
+print(y_pred_test)
+print(y_test.values)
+print(abs(y_test.values - y_pred_test))
+
+fpr_test, tpr_test, thresholds_test = roc_curve(y_test, y_pred_prob_test[:,1])
+fpr_fulldataset, tpr_fulldataset, thresholds_fulldataset = roc_curve(y, y_pred_prob_fulldataset[:, 1])
 
 roc_auc_test = roc_auc_score(y_test, y_pred_test)
-fpr_test, tpr_test, thresholds_test = roc_curve(y_test, y_pred_test)
-roc_auc_fulldataset = roc_auc_score(y, y_pred_fulldataset)
+
+roc_auc_test = roc_auc_score(y_test, y_pred_prob_test[:,1])
+
+
+# fpr_test, tpr_test, thresholds_test = roc_curve(y_test, y_pred_test)
+roc_auc_fulldataset = roc_auc_score(y, y_pred_prob_fulldataset[:, 1])
 score_test = xgb.score(X_test, y_test)
 score_fulldataset = xgb.score(X, y)
 
@@ -903,6 +945,44 @@ xgb_shap_values_df = pd.DataFrame(xgb_shap_values,
 
 rf_shap_values_df = ohe_inverse(rf_shap_values_df)
 xgb_shap_values_df = ohe_inverse(xgb_shap_values_df)
+
+def ohe_inverse(df_shap_values):
+    """Converts a dataframe containing shap values in ohe format
+    back to original genomic positions"""
+
+    # Auxiliary list to recreate original shap_values dataframe
+    list_shap_original = []
+
+    # Regular expression to pick attributes names.
+    # Since in our case attributes names are the genomic positions (i.e. an integer number), we use the regex below
+    import re
+    pattern = "^\d+"
+
+    # Auxiliary dictionary to create one pd.DataFrame for each sample, summing the shap values for each attribute.
+    # Later, these dataframes will be appended together, resulting in the final df.
+    dic={}
+
+    # for each sample.
+    iterable = xgb_shap_values_df.iterrows()
+     i, sample = next(iterable)
+        # initialize an empty dictionary, that will contain "attribute : summed shap values" for
+        # all attributes in this sample.
+        dic = {}
+        # The code below sums the importances for each category in each attribute in this sample.
+        for pos in sample.index:
+            attr = re.match(pattern, pos).group()
+            if attr not in dic.keys():
+                dic[attr] = sample[pos]
+            else:
+                dic[attr] += sample[pos]
+        # Create a df containing only the current sample
+        df_sample = pd.DataFrame(dic, index=[i])
+        # Append it to a list that will become the full dataframe later
+        list_shap_original.append(df_sample)
+
+    # Create a DataFrame containing the shap values for the "original" attributes.
+    shap_original = pd.concat(list_shap_original, axis=0)
+    return shap_original
 
 """
 #######################################################################
