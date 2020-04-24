@@ -1,9 +1,0 @@
-\begin{tabular}{lr}
-\toprule
-{} &  Number of Sequences \\
-Host       &                      \\
-\midrule
-Alouatta   &                   21 \\
-Callithrix &                   23 \\
-\bottomrule
-\end{tabular}

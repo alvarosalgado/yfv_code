@@ -30,7 +30,6 @@ from Bio.Alphabet import IUPAC
 import pandas as pd
 import numpy as np
 import re
-import datetime
 
 """
 #######################################################################
@@ -38,17 +37,17 @@ import datetime
 #######################################################################
 """
 
-# def read_data(ref_genome_file, ref_polyprot_file, querry_seq_file):
-#     """
-#     Reads data into Bio SeqRecord
-#     """
-#     genome = SeqIO.read(ref_genome_file, "genbank")
-#     polyprot = SeqIO.read(ref_polyprot_file, "genbank")
-#     querry = SeqIO.parse(querry_seq_file, "fasta")
-#     first_record = next(querry)
-#     querry_seq = first_record.seq
-#
-#     return (genome, polyprot, querry_seq)
+def read_data(ref_genome_file, ref_polyprot_file, querry_seq_file):
+    """
+    Reads data into Bio SeqRecord
+    """
+    genome = SeqIO.read(ref_genome_file, "genbank")
+    polyprot = SeqIO.read(ref_polyprot_file, "genbank")
+    querry = SeqIO.parse(querry_seq_file, "fasta")
+    first_record = next(querry)
+    querry_seq = first_record.seq
+
+    return (genome, polyprot, querry_seq)
 
 def find_align_start(seq, ref_genome, search_size):
     """
@@ -127,7 +126,6 @@ def pos_aminoacid(nn_pos, seq_rel_start, ref_genome, ref_polyprot):
 
 
 def seq_snv_info(nn_pos, seq, ref_genome, ref_polyprot, search_size=20):
-
     """
     given a position in a database sequence, returns:
     - sequence codon
@@ -168,42 +166,15 @@ def seq_snv_info(nn_pos, seq, ref_genome, ref_polyprot, search_size=20):
 
     return (codon_seq, aa_seq, ref_pos, codon_ref, aa_ref, codon_pos)
 
-def which_protein(nn_snv, aa_pos, aa_ref, dic_prot, ref_polyprot, case):
+def which_protein(aa_pos, dic_prot):
     """
     Given an aminoacid position, returns in which protein inside the
     polyprotein it is.
     """
-    print("SNV at position {} on genomes under analysis\n".format(nn_snv))
-
-    log_file = './OUTPUT/log_{}_SNV_INFO.txt'.format(case)
-
     for prot in dic_prot:
         if aa_pos in dic_prot[prot]:
-
-            print(prot)
-            start = int(dic_prot[prot].start)
-            print('Protein start in reference polyprotein: {}'.format(start))
-            print('Residue "{}" position in reference polyprotein: {}'.format(aa_ref, aa_pos))
-            pos_in_protein = aa_pos - start
-            print('Residue "{}" position in {} protein: {}'.format(aa_ref, prot, pos_in_protein))
-            neighbours = ref_polyprot.seq[aa_pos-5 : aa_pos +6]
-            print('Neighbouring residues ("{}" is in the middle): {}'.format(aa_ref, neighbours))
-
-            with open(log_file, 'a') as log:
-                x = datetime.datetime.now()
-                log.write('SNV info:\n{0}\n\n'.format(x))
-                log.write("SNV at position {} on genomes under analysis.\n".format(nn_snv))
-                log.write('Protein: {}.\n'.format(prot))
-                log.write('Protein start in reference polyprotein: {}.\n'.format(start))
-                log.write('Residue "{}" position in reference polyprotein: {}.\n'.format(aa_ref, aa_pos))
-                log.write('Residue "{}" position in {} protein: {}.\n'.format(aa_ref, prot, pos_in_protein))
-                log.write('Neighbouring residues ("{}" is in the middle): {}.\n'.format(aa_ref, neighbours))
-                log.write('////////////////////////////////////////////////\n\n')
-
-
             return prot
             break
-
 
 
 """
@@ -214,65 +185,33 @@ MAIN
 
 if __name__ == "__main__":
 
-    #%%
-    # NOVO
+    # dataset_file = '../Callithrix_Analysis/DATA/!CLEAN/ALL_YFV.aln'
+    # ref_genome_file = '../DATA/Reference_GENBANK_YFV/YFV_BeH655417_JF912190.fas'
+    # ref_polyprot_file = '../DATA/Reference_GENBANK_YFV/YFV_BeH655417_JF912190.fas'
+    querry_sequence_file = '../DATA/Human_Analisys/DATA/querry_seq_marielton.fas'
 
-    # First I read the sequences I'll be working with.
-    # Even though both references are in GB format, which contains a lot of
-    # metadata info, SeqIO.read knows to separate it neatly so I can get
-    # the nucleotide or aminoacid sequence just by calling its "seq" attribute.
+    (ref_genome, ref_polyprot, seq) = read_data(ref_genome_file, ref_polyprot_file, dataset_file)
 
-    # The querry sequence must be one of the sequences I'm actually analizing.
-    # It must be the one that starts first and, preferably, with no gaps in
-    # its first 10 to 20 positions.
-
-    # IDEA for automatically finding a suitable querry inside a dataset:
-
-    # for seq in fasta:
-    #     for position in seq:
-    #         if nucleotide is not gap:
-    #             lowest_position = position
-    #     if lowest_position < best_lowest_position:
-    #         if nucleotides from lowest_position to lowest_position+10 are not gap:
-    #             best_lowest_position = lowest_position
-    #             best_seq = seq
-
-    case = "HUMAN"
-
-    ref_genome_file = '../DATA/Reference_GENBANK_YFV/YFV_BeH655417_JF912190.gb'
-    ref_polyprot_file = '../DATA/Reference_GENBANK_YFV/YFV_BeH655417_JF912190_polyprot.gb'
-    querry_seq_file = '../DATA/Human_Analisys/DATA/querry_seq_marielton.fas'
-
-    ref_genome = SeqIO.read(ref_genome_file, "genbank")
-    ref_polyprot = SeqIO.read(ref_polyprot_file, "genbank")
-    querry = SeqIO.parse(querry_seq_file, "fasta")
-    first_record = next(querry)
-    querry_seq = first_record.seq
-    #%%
-    # (ref_genome, ref_polyprot, querry_seq) = read_data(ref_genome_file, ref_polyprot_file, querry_seq_file)
-
-    seq_rel_start = find_align_start(querry_seq, ref_genome, 10)
+    seq_rel_start = find_align_start(seq, ref_genome, 20)
     print(seq_rel_start)
-    s1 = querry_seq[:20]
-    s2 = ref_genome[seq_rel_start:seq_rel_start+20].seq
+    s1 = seq[:20]
+    s2 = ref_genome[142:142+20].seq
     s1 == s2
 
     dic_prot = read_polyprotein(ref_polyprot)
 
-    nn_snv = 1000
-
-    (aa_pos, aa, codon, codon_pos) = pos_aminoacid(nn_snv, seq_rel_start, ref_genome, ref_polyprot)
+    (aa_pos, aa, codon, codon_pos) = pos_aminoacid(6501, seq_rel_start, ref_genome, ref_polyprot)
 
     print(aa_pos)
     print(aa)
     print(codon)
     print(codon_pos)
 
-    prot = which_protein(nn_snv, aa_pos, dic_prot, case)
+    prot = which_protein(aa_pos, dic_prot)
     print(prot)
 
 
-    (codon_seq, aa_seq, ref_pos, codon_ref, aa_ref, codon_pos) = seq_snv_info(1000, querry_seq, ref_genome, ref_polyprot)
+    (codon_seq, aa_seq, ref_pos, codon_ref, aa_ref, codon_pos) = seq_snv_info(6501, seq, ref_genome, ref_polyprot)
 
     codon_seq
     aa_seq
@@ -282,6 +221,20 @@ if __name__ == "__main__":
     ref_pos
 
     ref_polyprot.seq[aa_pos]
+
+    for prot in dic_prot:
+        if aa_pos in dic_prot[prot]:
+            print(prot)
+            start = int(dic_prot[prot].start)
+            print('Protein start in polyprotein: {}'.format(start))
+            print('Residue "{}" position in polyprotein: {}'.format(aa_ref, aa_pos))
+            pos_in_protein = aa_pos - start
+            print('Residue "{}" position in {} protein: {}'.format(aa_ref, prot, pos_in_protein))
+            neighbours = ref_polyprot.seq[aa_pos-5 : aa_pos +6]
+            print('Neighbouring residues ("{}" is in the middle): {}'.format(aa_ref, neighbours))
+            break
+
+
 
 """
 #######################################################################

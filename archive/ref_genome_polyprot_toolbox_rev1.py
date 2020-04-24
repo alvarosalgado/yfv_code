@@ -38,17 +38,17 @@ import datetime
 #######################################################################
 """
 
-# def read_data(ref_genome_file, ref_polyprot_file, querry_seq_file):
-#     """
-#     Reads data into Bio SeqRecord
-#     """
-#     genome = SeqIO.read(ref_genome_file, "genbank")
-#     polyprot = SeqIO.read(ref_polyprot_file, "genbank")
-#     querry = SeqIO.parse(querry_seq_file, "fasta")
-#     first_record = next(querry)
-#     querry_seq = first_record.seq
-#
-#     return (genome, polyprot, querry_seq)
+def read_data(ref_genome_file, ref_polyprot_file, querry_seq_file):
+    """
+    Reads data into Bio SeqRecord
+    """
+    genome = SeqIO.read(ref_genome_file, "genbank")
+    polyprot = SeqIO.read(ref_polyprot_file, "genbank")
+    querry = SeqIO.parse(querry_seq_file, "fasta")
+    first_record = next(querry)
+    querry_seq = first_record.seq
+
+    return (genome, polyprot, querry_seq)
 
 def find_align_start(seq, ref_genome, search_size):
     """
@@ -127,7 +127,6 @@ def pos_aminoacid(nn_pos, seq_rel_start, ref_genome, ref_polyprot):
 
 
 def seq_snv_info(nn_pos, seq, ref_genome, ref_polyprot, search_size=20):
-
     """
     given a position in a database sequence, returns:
     - sequence codon
@@ -168,7 +167,7 @@ def seq_snv_info(nn_pos, seq, ref_genome, ref_polyprot, search_size=20):
 
     return (codon_seq, aa_seq, ref_pos, codon_ref, aa_ref, codon_pos)
 
-def which_protein(nn_snv, aa_pos, aa_ref, dic_prot, ref_polyprot, case):
+def which_protein(nn_snv, aa_pos, dic_prot, case):
     """
     Given an aminoacid position, returns in which protein inside the
     polyprotein it is.

@@ -97,10 +97,11 @@ def LR_predict(alphas, X):
     P > 0.5, class 1
     P < 0.5, class 0
     '''
-    X.insert(loc=0, column='alpha_0', value=1)
+    X_plus0 = X.copy()
+    X_plus0.insert(loc=0, column='alpha_0', value=1)
 
-    X = X.values
-    log_odds = np.dot(X, alphas)
+    X_plus0 = X_plus0.values
+    log_odds = np.dot(X_plus0, alphas)
     odds = np.exp(log_odds)
     P = (odds/(1+odds))
     predicted = np.where(P>0.5, 1, 0)

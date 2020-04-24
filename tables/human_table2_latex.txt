@@ -1,8 +1,0 @@
-\begin{tabular}{llllll}
-\toprule
-{} & 557  & 1019 & 6501 & 7025 & 1257 \\
-\midrule
-Non-serious &    C &    A &    A &    C &    C \\
-Serious     &    T &    G &    G &    T &    T \\
-\bottomrule
-\end{tabular}

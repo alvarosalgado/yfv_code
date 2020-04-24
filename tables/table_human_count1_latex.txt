@@ -1,9 +1,0 @@
-\begin{tabular}{lr}
-\toprule
-{} &  Number of Sequences \\
-Host                   &                      \\
-\midrule
-Human                  &                   17 \\
-Human Serious or Fatal &                    4 \\
-\bottomrule
-\end{tabular}
