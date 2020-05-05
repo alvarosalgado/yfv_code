@@ -20,9 +20,16 @@ from Bio.Alphabet import IUPAC
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns; sns.set_style('whitegrid')
+import seaborn as sns; sns.set_style("whitegrid")
 
 import re
+import glob
+import datetime
+import time
+import progressbar
+
+import os, sys
+cwd = os.getcwd()
 
 """
 #######################################################################
@@ -50,10 +57,11 @@ def create_seq_df(file, seq_start=0):
     identifiers = [seq_rec.id for seq_rec in SeqIO.parse(file, "clustal")]
 
     # Gets the sequences nucleotides, for each sequence in a multi-fasta
-    seqs = np.array([list(str(seq_rec.seq)) for seq_rec in SeqIO.parse(file, "clustal")])
+    seqs = np.array([list(str(seq_rec.seq.lower())) for seq_rec in SeqIO.parse(file, "clustal")])
 
-    # Creates columns names based on position, starting from 0.
+    # Creates columns names based on position, starting from 1.
     cols = list(range(seq_start, seq_start + seqs.shape[1]))
+    cols += 1
 
     # Creates dataframe with data
     seq_df = pd.DataFrame(seqs, index=identifiers, columns=cols)
@@ -160,9 +168,17 @@ Data Cleaning
 """
 def clean_df(seq_df, threshold=0.9):
 
-    # First, turn all "N" and "-" into np.nan. This will mark the missing values.
-    seq_df.replace('N', np.nan, inplace=True)
-    seq_df.replace('-', np.nan, inplace=True)
+    # Replace non sequenced positions with np.nan
+    unique = pd.unique(seq_df.values.ravel('K'))
+    # Get a list of all characters other than "actg" are present in the DataFrame
+    unique = unique[unique!='a']
+    unique = unique[unique!='c']
+    unique = unique[unique!='t']
+    unique = unique[unique!='g']
+    to_replace = unique
+
+    # Replace them with np.nan
+    seq_df.replace(to_replace, np.nan, inplace=True)
 
     # Second, keep only rows (samples) containing less then threshold% missing values (NaN).
     threshold = int(seq_df.shape[1]*threshold)
@@ -229,7 +245,7 @@ def insert_features(seq_df, Ct_threshold = 20):
     return seq_df
 
 
-def one_hot_encoding(seq_df, file_path='../DATA/Callithrix_Analysis/DATA/!CLEAN/'):
+def one_hot_encoding(seq_df, pik_dir):
 
     nucleotides_df = seq_df.iloc[:, 6:]
     seq_ohe_df = pd.get_dummies(nucleotides_df)
@@ -242,14 +258,46 @@ def one_hot_encoding(seq_df, file_path='../DATA/Callithrix_Analysis/DATA/!CLEAN/
     seq_ohe_df.insert(5, 'Ct_Group', seq_df['Ct_Group'])
 
 
-    seq_ohe_df.to_csv(file_path + 'YFV_seq_ohe_df.csv', index=True, header=True, decimal='.', sep=',', float_format='%.2f')
+    seq_ohe_df.to_csv(pik_dir + '/YFV_seq_ohe_df.csv', index=True, header=True, decimal='.', sep=',', float_format='%.2f')
 
-    seq_ohe_df.to_pickle(file_path + 'YFV_seq_ohe_df.pkl')
+    seq_ohe_df.to_pickle(pik_dir + '/YFV_seq_ohe_df.pkl')
 
-    seq_df.to_pickle(file_path + 'YFV_seq_df.pkl')
+    seq_df.to_pickle(pik_dir + '/YFV_seq_df.pkl')
 
     return seq_ohe_df
 
+
+""" /////////////////////////////////////////////////////////////////////// """
+
+""" SET THE STAGE... """
+
+# Create OUTPUT dir inside DATA dir, where all processed data, figures, tbles, ect will be stored
+
+working_dir = '/Users/alvarosalgado/Google Drive/Bioinformática/!Qualificação_alvaro/YFV'
+
+if os.path.isdir(working_dir+'/2_OUTPUT/NHP')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/NHP/')
+if os.path.isdir(working_dir+'/2_OUTPUT/NHP/FIGURES/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/NHP/FIGURES/')
+if os.path.isdir(working_dir+'/2_OUTPUT/NHP/TABLES/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/NHP/TABLES/')
+if os.path.isdir(working_dir+'/2_OUTPUT/NHP/PICKLE/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/NHP/PICKLE/')
+
+out_dir = working_dir+'/2_OUTPUT/NHP'
+fig_dir = working_dir+'/2_OUTPUT/NHP/FIGURES'
+tab_dir = working_dir+'/2_OUTPUT/NHP/TABLES'
+pik_dir = working_dir+'/2_OUTPUT/NHP/PICKLE'
+data_dir = working_dir+'/1_DATA/Callithrix_Analysis/DATA/!CLEAN'
+
+log_file = out_dir+'/LOG_preprocessing_{0}.txt'.format(datetime.datetime.now())
+with open(log_file, 'w') as log:
+    x = datetime.datetime.now()
+    log.write('LOG file for data preprocessing\n{0}\n\n'.format(x))
+
+
+
+""" /////////////////////////////////////////////////////////////////////// """
 """
 #######################################################################
 MAIN
@@ -257,13 +305,13 @@ MAIN
 """
 
 
-file_1 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/2019-01-30_ZIBRA2_YFV-RIO-Diferentes_CTs'
-file_2 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/NHP_65_outbreak'
-file_3 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/2018-01_Salvador'
-file_4 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/2018-03-04_LACEN_Bahia'
-file_5 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/FUNED_AGOSTO-2018'
-file_6 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/RIO_DE_JANEIRO'
-file_7 = '../DATA/Callithrix_Analysis/DATA/!CLEAN/YFV_LACEN_BAHIA'
+file_1 = data_dir+'/2019-01-30_ZIBRA2_YFV-RIO-Diferentes_CTs'
+file_2 = data_dir+'/NHP_65_outbreak'
+file_3 = data_dir+'/2018-01_Salvador'
+file_4 = data_dir+'/2018-03-04_LACEN_Bahia'
+file_5 = data_dir+'/FUNED_AGOSTO-2018'
+file_6 = data_dir+'/RIO_DE_JANEIRO'
+file_7 = data_dir+'/YFV_LACEN_BAHIA'
 
 file_list = [file_1,
             file_2,
@@ -273,39 +321,138 @@ file_list = [file_1,
             file_6,
             file_7]
 
+file_fasta_all = data_dir+'/YFV_NHP_ALL_REF_ALN.fasta'
+
+# Gets the sequences IDs from a multi-fasta into a list
+identifiers = [seq_rec.id for seq_rec in SeqIO.parse(file_fasta_all, "fasta")]
+
+# Gets the sequences nucleotides, for each sequence in a multi-fasta
+seqs = np.array([list(str(seq_rec.seq.lower())) for seq_rec in SeqIO.parse(file_fasta_all, "fasta")])
+
+# Creates columns names based on position, starting from 1.
+cols = np.array(range(seqs.shape[1]))
+cols = cols + 1
+# Creates dataframe with data
+ALL_df = pd.DataFrame(seqs, index=identifiers, columns=cols)
+# Remove reference sequence
+ALL_df.drop(ALL_df.index[0], axis=0, inplace=True)
+# Remove trailing ends
+ALL_df.drop(np.arange(1,143), axis=1, inplace=True)
+ALL_df.drop(np.arange(10223,11004), axis=1, inplace=True)
+
+ALL_df.shape
+
+#%%
+
 (seq_list, metadata_list) = read_files(file_list)
 
-seq_dict = create_seq_dict(seq_list)
-metadata_dict = create_meta_dict(metadata_list)
+seq_dict = {}
+for file in seq_list:
+    identifiers = [seq_rec.id for seq_rec in SeqIO.parse(file, "clustal")]
+    df = ALL_df.loc[identifiers, :].copy()
+    seq_dict[file] = df
+
+dic_keys = [key for key in seq_dict.keys()]
+
+
+metadata_dict = {}
+for file in metadata_list:
+    metadata_df = pd.read_excel(file, index_col='index')
+    metadata_dict[file] = metadata_df
 
 link_meta_info(file_list, seq_dict, metadata_dict)
-# seq_dict[file_5+'.aln']
+
 seq_df = concat_seq_df(seq_dict)
 seq_df.groupby('Host').count()
+
+seq_df.shape
 
 # seq_df = seq_df[seq_df['Host'] == 'Callithrix'].copy()
 # seq_df.loc['FUNED_AGOSTO-2018|FAH50662/|BC33|_FAH50662.primertrimmed.sorted.bam', :]
 # metadata_dict[file_7+'.xlsx'].head()
-seq_df = clean_df(seq_df, threshold=0.95)
+#%%
+meta = seq_df.iloc[:, 0:4].copy()
+seq_df = seq_df.iloc[:, 4:].copy()
+# Replace non sequenced positions with np.nan
+unique = pd.unique(seq_df.values.ravel('K'))
+# Get a list of all characters other than "actg" are present in the DataFrame
+unique = unique[unique!='a']
+unique = unique[unique!='c']
+unique = unique[unique!='t']
+unique = unique[unique!='g']
+to_replace = unique
+
+# Replace them with np.nan
+seq_df.replace(to_replace, np.nan, inplace=True)
+
+# Second, keep only rows (samples) containing less then threshold% missing values (NaN).
+threshold = 0.9
+threshold = int(seq_df.shape[1]*threshold)
+seq_df.dropna(axis=0, how='any', thresh=threshold, inplace=True)
+seq_df.shape
+
+# Third, remove all columns that still containg missing values.
+seq_df.dropna(axis=1, how='any', inplace=True)
+seq_df.shape
+
+# Remove all columns that contain only one value (they have no information for the classification algorithm)
+for col in seq_df.columns:
+    if seq_df[col].nunique() == 1:
+        seq_df.drop(col, axis=1, inplace=True)
 
 seq_df.shape
-seq_df= insert_features(seq_df, Ct_threshold = 20)
+
+# Merge metadata again
+seq_df = meta.merge(seq_df, left_index=True, right_index=True)
+# Remove rows containing NaN or empty values in the Ct column
+seq_df = seq_df[seq_df['Ct'].notnull()]
+seq_df = seq_df[seq_df['Ct'] != 'ct']
+seq_df.shape
+
+# Make sure values in Ct column are float numeric
+seq_df['Ct'] = pd.to_numeric(seq_df['Ct'])
+seq_df['Ct'] = seq_df['Ct'].astype(np.float16)
+
+# Make sure values in Date are datetime
+seq_df['Date'] = pd.to_datetime(seq_df['Date'])
+
+# Correct some values
+seq_df.replace('Allouata', 'Alouatta', inplace=True)
+seq_df.replace('cebidae', 'Cebidae', inplace=True)
+seq_df.replace('NHP (unk)', 'unk', inplace=True)
+seq_df.replace('Sem informação','unk', inplace=True)
+seq_df.replace('Leontopithecus rosalia','L. rosalia', inplace=True)
+
+
+
+
+
+
+#%%
+
+seq_df = insert_features(seq_df, Ct_threshold = 20)
 # High Ct
 seq_df.groupby('Host')['Ct_Group'].sum()
-# seq_0 = seq_df.iloc[0, :].values[6:]
-# seq_df.replace('N', np.nan, inplace=True)
-# seq_df.replace('-', np.nan, inplace=True)
-# threshold = int(seq_df.shape[1]*0.9)
-# seq_df.dropna(axis=0, how='any', thresh=threshold, inplace=True)
-# seq_df.dropna(axis=1, how='any', inplace=True)
-# seq_df.shape
 
-seq_ohe_df = one_hot_encoding(seq_df, file_path='../DATA/Callithrix_Analysis/DATA/!CLEAN/')
+#%%
+meta = seq_df.iloc[:, :6].copy()
+nn_df = seq_df.iloc[:, 6:].copy()
+
+seq_ohe_df = pd.get_dummies(nn_df)
+
+# Merge metadata again
+seq_ohe_df = meta.merge(seq_ohe_df, left_index=True, right_index=True)
+
+seq_ohe_df.to_pickle(pik_dir + '/OHE_NHP_YFV.pkl')
+
+seq_df.to_pickle(pik_dir + '/NHP_YFV.pkl')
+#%%
+
 
 host_count = seq_df.groupby('Host')["ID"].count()
 host_count = host_count[["Alouatta", "Callithrix"]]
 host_count.name = "Number of Sequences"
-host_count.to_csv('./OUTPUT/CAL_ALO_host_count.csv')
+host_count.to_csv(out_dir+'/CAL_ALO_host_count.csv')
 
 # table_count1_latex = host_count.to_latex()
 # with open('./tables/table_count1_latex.txt', 'w') as f:
@@ -321,7 +468,7 @@ for host, host_data in seq_df.groupby('Host'):
     #df.index = [host]
     #print(b)
 df = pd.concat(listdf)
-df.to_csv('./OUTPUT/CAL_ALO_Ct_count.csv')
+df.to_csv(out_dir+'/CAL_ALO_Ct_count.csv')
 
 
 # table_count2_latex = df.to_latex()
