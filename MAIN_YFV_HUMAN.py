@@ -24,6 +24,13 @@ from sklearn.utils.multiclass import unique_labels
 
 import pickle
 import datetime
+import re
+import glob
+import time
+import progressbar
+
+import os, sys
+cwd = os.getcwd()
 
 import shap
 
@@ -121,7 +128,7 @@ def initial_xgb_model(X_train, y_train, X_test, y_test, scale_pos_weight, analys
 
     fig1.tight_layout();
 
-    fig1.savefig('./FIGURES/{}_XGB_initial.png'.format(analysis), format='png', dpi=300, transparent=False)
+    fig1.savefig(fig_dir+'/{}_XGB_initial.png'.format(analysis), format='png', dpi=300, transparent=False)
 
     return initial_xgb
 """
@@ -196,7 +203,7 @@ def final_xgb(X_train, y_train, X_test, y_test, scale_pos_weight, best_params, a
 
     fig1.tight_layout();
 
-    fig1.savefig('./FIGURES/{}_final_xgb_model.png'.format(analysis), format='png', dpi=300, transparent=False)
+    fig1.savefig(fig_dir+'/{}_final_xgb_model.png'.format(analysis), format='png', dpi=300, transparent=False)
 
     return xgb
 
@@ -265,7 +272,7 @@ def plot_roc(fpr, tpr, roc_auc, analysis, method, dataset='test_dataset'):
     axes.set_title('Receiver operating characteristic - {}'.format(dataset))
     axes.legend(loc="lower right")
     fig.show()
-    fig.savefig("./FIGURES/{0}_ROC_{1}_{2}.png".format(analysis, method, dataset), format='png', dpi=300, transparent=False)
+    fig.savefig(fig_dir+"/{0}_ROC_{1}_{2}.png".format(analysis, method, dataset), format='png', dpi=300, transparent=False)
 
 """
 #######################################################################
@@ -428,7 +435,7 @@ def plot_importances_genome(xgb_shap_values_df, rf_shap_values_df, alphas, analy
 
     fig.tight_layout();
 
-    fig.savefig('./FIGURES/{}_overview_importances.png'.format(analysis), format='png', dpi=300, transparent=False)
+    fig.savefig(fig_dir+'/{}_overview_importances.png'.format(analysis), format='png', dpi=300, transparent=False)
 
 """
 #######################################################################
@@ -468,7 +475,7 @@ def importance_summary(xgb_shap_values_df, rf_shap_values_df, alphas, analysis):
 
     fig.tight_layout();
 
-    fig.savefig("./FIGURES/{}_summary.png".format(analysis), format='png', dpi=300, transparent=False)
+    fig.savefig(fig_dir+"/{}_summary.png".format(analysis), format='png', dpi=300, transparent=False)
 
     return (xgb_summary, rf_summary, sorted_alphas)
 
@@ -537,7 +544,7 @@ def get_merged_results(xgb_summary, rf_summary, sorted_alphas, analysis, top=180
 
     # fig.tight_layout();
 
-    fig.savefig("./FIGURES/{}_combined_{}_summary.png".format(analysis, top), format='png', dpi=300, transparent=False)
+    fig.savefig(fig_dir+"/{}_combined_{}_summary.png".format(analysis, top), format='png', dpi=300, transparent=False)
 
     return results_all
 
@@ -655,7 +662,7 @@ def plot_confusion_matrix(y_true, y_pred, classes, method,
                     ha="center", va="center",
                     color="white" if cm[i, j] > thresh else "black")
     fig.tight_layout()
-    fig.savefig('./FIGURES/{}_confusion_{}_{}.png'.format(analysis, method, dataset), format='png', dpi=300, transparent=False)
+    fig.savefig(fig_dir+'/{}_confusion_{}_{}.png'.format(analysis, method, dataset), format='png', dpi=300, transparent=False)
     return ax
 
 
@@ -699,17 +706,43 @@ MAIN
 MAIN
 #######################################################################
 """
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'w') as log:
+
+""" /////////////////////////////////////////////////////////////////////// """
+
+""" SET THE STAGE... """
+
+# Create OUTPUT dir inside DATA dir, where all processed data, figures, tbles, ect will be stored
+
+working_dir = '/Users/alvarosalgado/Google Drive/Bioinformática/!Qualificação_alvaro/YFV'
+
+if os.path.isdir(working_dir+'/2_OUTPUT')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/')
+if os.path.isdir(working_dir+'/2_OUTPUT/FIGURES/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/FIGURES/')
+if os.path.isdir(working_dir+'/2_OUTPUT/TABLES/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/TABLES/')
+if os.path.isdir(working_dir+'/2_OUTPUT/PICKLE/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/PICKLE/')
+
+out_dir = working_dir+'/2_OUTPUT'
+fig_dir = working_dir+'/2_OUTPUT/FIGURES'
+tab_dir = working_dir+'/2_OUTPUT/TABLES'
+pik_dir = working_dir+'/2_OUTPUT/PICKLE'
+data_dir = working_dir+'/1_DATA/Human_Analisys'
+
+log_file = out_dir+'/LOG_YFV_HUMAN_MAIN_{0}.txt'.format(datetime.datetime.now())
+with open(log_file, 'w') as log:
     x = datetime.datetime.now()
-    log.write('LOG file for YFV Human Analysis\n{0}\n\n'.format(x))
+    log.write('LOG file for HUMAN YFV MAIN\n{0}\n\n'.format(x))
+
 
 
 analysis = 'HUMAN'
 # Data inmport
 # %%
-pickle_ohe = '../DATA/Human_Analisys/DATA/human_YFV_seq_ohe_df.pkl'
-pickle_seqdf = '../DATA/Human_Analisys/DATA/human_YFV_seq_df.pkl'
-pickle_seqdforiginal = '../DATA/Human_Analisys/DATA/human_YFV_original_seq_df.pkl'
+pickle_ohe = pik_dir+'/human_YFV_seq_ohe_df.pkl'
+pickle_seqdf = pik_dir+ '/human_YFV_seq_df.pkl'
+pickle_seqdforiginal = pik_dir+ '/human_YFV_original_seq_df.pkl'
 
 (seq_df, ohe_df, seqdforiginal) = get_data(pickle_seqdf, pickle_ohe, pickle_seqdforiginal)
 
@@ -733,9 +766,13 @@ ohe_df_use = pd.concat(dataframes)
 
 datasets_used = ohe_df_use["Dataset"].unique()
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
-    log.write("{0}\nDatasets for training:\n{1}\n{2}\n\n".format(x, datasets_used[0], datasets_used[1]))
+
+    log.write("{0}\nDatasets for training:\n".format(x))
+    for dataset in datasets_used:
+        log.write("{0}, ".format(dataset))
+    log.write("\n\n")
 
 # Prepare data for training and testing
 # %%
@@ -743,7 +780,12 @@ with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
 test_size = 0.5
 (X, y, X_train, X_test, y_train, y_test, scale_pos_weight) = get_train_test_split(ohe_df_use, test_size=test_size)
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+positive = y_train.sum()
+negative = len(y_train) - positive
+scale_pos_weight = negative/positive
+
+
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nTest Dataset Size: {1}%\n\n".format(x, test_size*100))
 
@@ -760,7 +802,7 @@ multi_index = pd.MultiIndex.from_product(index_names, names=['Method', 'Dataset'
 performance_df = pd.DataFrame(columns=['ROC-AUC', 'Accuracy', 'Precision'], index=multi_index)
 
 
-performance_df.to_csv('./OUTPUT/{}_PERFORMANCE_models.csv'.format(analysis), index=True)
+performance_df.to_csv(tab_dir+'/{}_PERFORMANCE_models.csv'.format(analysis), index=True)
 
 # XGBoost Grid Search
 # %%
@@ -774,23 +816,23 @@ params = {
         'n_estimators': [100, 10000]
         }
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nParameters used for XGBoost grid search CV:\n{1}\n\n".format(x, params))
-
+positive_weight = 0.01
 grid = grid_cv_xgb(X_train, y_train, scale_pos_weight, params, analysis, folds = 5)
 best_params = grid.best_params_
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nBest Parameters:\n{1}\n\n".format(x, best_params))
 
 
 results = pd.DataFrame(grid.cv_results_)
-results.to_csv('./OUTPUT/{0}_xgb-grid-search-results-01_{1}.csv'.format(analysis, datetime.datetime.now()), index=False)
+results.to_csv(tab_dir+'/{0}_xgb-grid-search-results-01_{1}.csv'.format(analysis, datetime.datetime.now()), index=False)
 results["mean_test_roc_auc"].unique()
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nThe grid search CV found in XGBoost that resulted in the following ROC-AUC scores:\n{1}\n\n".format(x, results["mean_test_roc_auc"].unique()))
     log.write("Therefore, the best parameters chosen are:\n{0}\n\n".format(best_params))
@@ -808,7 +850,7 @@ with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
 """XGB------------------------------------------------------------------------"""
 
 method = 'XGB'
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(x, method))
 
@@ -820,7 +862,7 @@ best_params = {'colsample_bytree': 0.3,
 
 xgb = final_xgb(X_train, y_train, X_test, y_test, scale_pos_weight, best_params, analysis)
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nXGBoost Model:\n{1}\n\n".format(x, xgb))
 
@@ -833,6 +875,17 @@ y_all_prob = np.array(xgb.predict_proba(X))
 # test dataset and full dataset (train + test)
 y_test_pred = xgb.predict(X_test)
 y_all_pred = xgb.predict(X)
+
+from sklearn.metrics import classification_report,confusion_matrix,roc_curve,auc,precision_recall_curve,roc_curve
+
+
+print(classification_report(y_test,y_test_pred))
+
+with open(out_dir+'LOG_MAIN_ML.txt', 'a') as log:
+    x = datetime.datetime.now()
+    log.write("{0}\n'---Classification Report---'\n{1}\n\n".format(x, method))
+    log.write("{0}\n\n".format(classification_report(y_test,y_test_pred)))
+
 
 fpr_test, tpr_test, thresholds_test = roc_curve(y_test, y_test_prob[:,1])
 fpr_all, tpr_all, thresholds_all = roc_curve(y, y_all_prob[:, 1])
@@ -850,7 +903,7 @@ plot_roc(fpr_all, tpr_all, score_roc_auc_all, analysis, method, 'Full')
 cm_test = confusion_matrix(y_test, y_test_pred)
 cm_all = confusion_matrix(y, y_all_pred)
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nXGBoost Confusion Matrices:\n\nTest Dataset:\n{1}\n\nFull Dataset:\n{2}\n\n".format(x, cm_test, cm_all))
 
@@ -886,20 +939,22 @@ ax = plot_confusion_matrix(y, y_all_pred,
 #%%
 method = 'RF'
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(x, method))
+
+weight = {0: 1, 1: scale_pos_weight}
 
 rf = RandomForestClassifier(n_estimators=100,
                             random_state=0,
                             max_features = 'auto',
                             bootstrap=True,
                             oob_score=True,
-                            class_weight='balanced')
+                            class_weight=weight)
 
 rf.fit(X_train, y_train)
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nRandom Forest Model:\n{1}\n\n".format(x, rf))
 
@@ -908,6 +963,13 @@ y_all_prob = rf.predict_proba(X)
 
 y_test_pred = rf.predict(X_test)
 y_all_pred = rf.predict(X)
+
+s1 = pd.Series(y_test_pred, name='predictions')
+s2 = pd.Series(y_test.values, name='truth')
+preds = pd.concat([s1, s2], axis=1)
+preds['error'] = abs(preds['truth']-preds['predictions'])
+preds['error'].sum()
+preds[preds['truth']==1]
 
 fpr_test, tpr_test, thresholds_test = roc_curve(y_test, y_test_prob[:, 1])
 fpr_all, tpr_all, thresholds_all = roc_curve(y, y_all_prob[:, 1])
@@ -918,6 +980,15 @@ score_roc_auc_all = roc_auc_score(y, y_all_pred)
 score_test = rf.score(X_test, y_test)
 score_all = rf.score(X, y)
 
+
+print(classification_report(y_test,y_test_pred))
+
+with open(out_dir+'LOG_MAIN_ML.txt', 'a') as log:
+    x = datetime.datetime.now()
+    log.write("{0}\n'---Classification Report---'\n{1}\n\n".format(x, method))
+    log.write("{0}\n\n".format(classification_report(y_test,y_test_pred)))
+
+
 plot_roc(fpr_test, tpr_test, score_roc_auc_test, analysis, method, 'Test')
 
 plot_roc(fpr_all, tpr_all, score_roc_auc_all, analysis, method, 'Full')
@@ -926,7 +997,7 @@ plot_roc(fpr_all, tpr_all, score_roc_auc_all, analysis, method, 'Full')
 cm_test = confusion_matrix(y_test, y_test_pred)
 cm_all = confusion_matrix(y, y_all_pred)
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nRandom Forest Confusion Matrices:\n\nTest Dataset:\n{1}\n\nFull Dataset:\n{2}\n\n".format(x, cm_test, cm_all))
 
@@ -961,7 +1032,7 @@ ax = plot_confusion_matrix(y, y_all_pred,
 import Logistic_regression_modified as lr
 method = 'MLR'
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(x, method))
 
@@ -993,6 +1064,13 @@ fpr_all, tpr_all, thresholds_all = roc_curve(y, y_all_pred)
 score_roc_auc_test = roc_auc_score(y_test, y_test_pred)
 score_roc_auc_all = roc_auc_score(y, y_all_pred)
 
+print(classification_report(y_test,y_test_pred))
+
+with open(out_dir+'LOG_MAIN_ML.txt', 'a') as log:
+    x = datetime.datetime.now()
+    log.write("{0}\n'---Classification Report---'\n{1}\n\n".format(x, method))
+    log.write("{0}\n\n".format(classification_report(y_test,y_test_pred)))
+
 plot_roc(fpr_test, tpr_test, score_roc_auc_test, analysis, method, 'Test')
 
 plot_roc(fpr_all, tpr_all, score_roc_auc_all, analysis, method, 'Full')
@@ -1000,7 +1078,7 @@ plot_roc(fpr_all, tpr_all, score_roc_auc_all, analysis, method, 'Full')
 cm_test = confusion_matrix(y_test, y_test_pred)
 cm_all = confusion_matrix(y, y_all_pred)
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nMod Logistic Regression Confusion Matrices:\n\nTest Dataset:\n{1}\n\nFull Dataset:\n{2}\n\n".format(x, cm_test, cm_all))
 
@@ -1030,7 +1108,7 @@ ax = plot_confusion_matrix(y, y_all_pred,
 
 
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nPerformance Table\n\n{1}\n\n".format(x, performance_df))
 
@@ -1055,7 +1133,7 @@ xgb_shap_values_df = pd.DataFrame(xgb_shap_values,
                                  index=X_train.index,
                                  columns=X_train.columns)
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nExample SHAP values for Random Forest in One Hot Encoded format:\n\n{1}\n\n".format(x, rf_shap_values_df.iloc[0:7, 0:2]
 ))
@@ -1064,7 +1142,7 @@ with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
 rf_shap_values_df = ohe_inverse(rf_shap_values_df)
 xgb_shap_values_df = ohe_inverse(xgb_shap_values_df)
 
-with open('./OUTPUT/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nExample SHAP values for Random Forest in Original Genomic Position format:\n\n{1}\n\n".format(x, rf_shap_values_df.iloc[0:7, 0:1]
 ))
@@ -1089,11 +1167,215 @@ Analyze results
 imp_merged = get_merged_results(xgb_summary, rf_summary, sorted_alphas, analysis, xgb_summary.shape[0])
 
 
+"""//////////////////////////////////////////////"""
+
+#%%
+from Bio.SeqFeature import SeqFeature, FeatureLocation
+from Bio.SeqRecord import SeqRecord
+import ref_genome_polyprot_toolbox as g_tool
+
+case = "HUMAN_YFV"
+
+ref_genome_file = working_dir+'/3_REFERENCE/YFV_REF_NC_002031.fasta'
+ref_polyprot_file = working_dir+'/3_REFERENCE/YFV_REF_NC_002031.gb'
+# querry_seq_file = data_dir+'/FUNED/ALIGNED_FUNED_SARS-CoV-2.fasta'
+
+ref_genome = SeqIO.read(ref_genome_file, "fasta").lower()
+ref_polyprot = SeqIO.read(ref_polyprot_file, "genbank")
+#%%
+
+
+"""
+Given a polyprotein genbank file (in '.gp' format), parses through
+its features and returns a dictionary containing the proteins
+names as keys and positions (start:end in "biopython location") as values.
+"""
+for feature in ref_polyprot.features:
+    print(feature)
+feature.type
+
+#%%
+dic_prot = {}
+# These positions are ZERO based, even though the .gb file is ONE based.
+for feature in ref_polyprot.features:
+    if feature.type == 'mat_peptide':
+        value = (feature.location)
+        key = (feature.qualifiers['product'][0])
+        dic_prot[key] = value
+
+
+dic_prot # here indexing starts at zero
+#%%
+
+proteins=[key for key in dic_prot.keys()]
+
+prot_seqs_dic = {}
+
+for prot in proteins:
+    start = dic_prot[prot].start
+    end = dic_prot[prot].end
+    seq = ref_genome.seq[start:end]
+    prot_seqs_dic[prot]=seq
+#%%
+
+
+
+
+
+
+# (1-1)//3
+# (2-1)//3
+# (3-1)//3
+# (1-1)%3
+# (2-1)%3
+# (3-1)%3
+#
+# nnpos = 14408 # here indexing starts at one
+#
+# protein
+# protein_start
+# nnpos_on_prot = nnpos - protein_start
+# aapos = ((nnpos_on_prot-1)//3)+1 # to start at position 1
+# codon_pos = ((nnpos_on_prot-1)%3)+1 # 1, 2, 3
+# codon_start = nnpos - codon_pos
+# codon = Seq(ref_genome[codon_start:codon_start+3])
+# aa = codon.translate()
+#
+#
+# ref_genome[265:271] # here indexing starts at zero
+# ref_genome[265:271].translate() # here indexing starts at zero
+
+
+
+
+def prot_info(nnpos, dic_prot, ref_genome):
+    utr = True
+    for prot in dic_prot:
+        if ((nnpos-1) >= dic_prot[prot].start and (nnpos-1) < dic_prot[prot].end):
+            utr = False
+            protein_start = int(dic_prot[prot].start)
+            nnpos_on_prot = nnpos - protein_start # Here, the number you get is results in indexing the protein nucleotides starting at ONE. So, if nnposonprot=3, it is the third nucleotide in the protein, 1, 2, 3!
+            aapos = ((nnpos_on_prot-1)//3)+1 # to start at position 1
+            codon_pos = ((nnpos_on_prot-1)%3)+1 # 1, 2, 3
+            codon_start = nnpos - codon_pos # Also considering index starting at ONE.
+            codon = ref_genome[codon_start:codon_start+3]
+            aa_ref = codon.translate()
+            break
+    if utr:
+        prot = 'UTR'
+        protein_start = 'UTR'
+        nnpos_on_prot = 'UTR'
+        aapos = 'UTR'
+        codon_pos = 'UTR'
+        codon_start = 'UTR'
+        codon = SeqRecord('UTR')
+        aa_ref = SeqRecord('UTR')
+    return(prot, protein_start, nnpos_on_prot, aapos, codon, codon_pos, aa_ref)
+
+
+
+# 14408-13467
+#
+#
+#
+#
+#
+# nnpos = 14408 # here indexing starts at one
+# (prot, protein_start, nnpos_on_prot, aapos, codon, codon_pos, aa_ref) = prot_info(nnpos, dic_prot, ref_genome)
+#
+# str(aa_ref)
+# str(aa_ref.seq)
+# str(codon.seq)
+
+
+
+
+
+
+cols = ['Rank', 'nn postition', 'Protein', 'nn position on protein', 'aa position on protein', 'aa reference', 'codon reference', 'aa variation', 'codon variation', 'SNV codon position (1, 2, 3)']
+# dummy_sample = np.zeros(len(cols))
+
+rank = 1
+rows = []
+for nnpos in imp_merged.index:
+    nnpos = int(nnpos)
+    (prot, ps, nnpos_on_prot, aapos, codon, codon_pos, aa_ref) = prot_info(nnpos, dic_prot, ref_genome)
+
+    if prot is not 'UTR':
+        codon_var = []
+        aa_var = []
+
+        nn_ref = ref_genome[nnpos-1]
+        nn_diversity = seqdforiginal[nnpos].unique()
+
+        for nn in nn_diversity:
+            if nn is not nn_ref:
+                if (nn is 'a') or (nn is 'c') or (nn is 't') or (nn is 'g'):
+                    new_codon = list(str(codon.seq))
+                    new_codon[codon_pos-1] = nn
+                    new_codon = "".join((new_codon))
+                    new_codon=Seq(new_codon)
+                    codon_var.append(new_codon)
+
+        for new_codon in codon_var:
+            new_aa = new_codon.translate()
+            aa_var.append(new_aa)
+
+        l = [str(c) for c in codon_var]
+        codon_var = l
+
+        l = [str(aa) for aa in aa_var]
+        aa_var = l
+    else:
+        aa_var = 'X'
+        codon_var = 'xxx'
+
+
+
+
+    row = [rank, nnpos, prot, nnpos_on_prot, aapos, str(aa_ref.seq), str(codon.seq), " ".join(aa_var), " ".join(codon_var), codon_pos]
+    rows.append(row)
+    rank +=1
+
+SNV_RESULTS = pd.DataFrame(rows, index=imp_merged.index, columns=cols)
+
+SNV_RESULTS.to_csv(out_dir+'SNV_RESULTS.csv')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # The analysis below and the results shown in "table" demonstrate the power of XGBoost. It only picked 3 features, and there was a total of 5 that really had any informative value. All the rest, that both RF and LR gave some importance (albeit small), have no information at all, given that they do not contain a nucleotide that is different from the most frequent one in the other class and in the Alouatta samples.
 (table) = validate_SNV(seq_df, imp_merged)
 
-table.to_csv('./OUTPUT/{}_SNV.csv'.format(analysis))
+table.to_csv(out_dir+'/{}_SNV.csv'.format(analysis))
 
 table_clean = table.copy()
 
@@ -1101,7 +1383,7 @@ for col in table_clean.columns:
     if table_clean.loc['Non-serious', col] == table_clean.loc['Serious', col]:
         table_clean.drop(col, axis=1, inplace=True)
 
-table_clean.to_csv('./OUTPUT/{}_SNV_clean.csv'.format(analysis))
+table_clean.to_csv(out_dir+'/{}_SNV_clean.csv'.format(analysis))
 
 
 
@@ -1160,6 +1442,6 @@ for nn_pos, nn in snv_to_analyze.iteritems():
     report_dic[nn_pos] = df
 
 table3 = pd.concat(list(report_dic.values()))
-table3.to_csv('./OUTPUT/{}_SNV_proteins_info.csv'.format(analysis))
+table3.to_csv(out_dir+'/{}_SNV_proteins_info.csv'.format(analysis))
 
-performance_df.to_csv('./OUTPUT/{}_PERFORMANCE_models.csv'.format(analysis), index=True)
+performance_df.to_csv(tab_dir+'/{}_PERFORMANCE_models.csv'.format(analysis), index=True)
