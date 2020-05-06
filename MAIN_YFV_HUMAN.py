@@ -718,7 +718,7 @@ MAIN
 
 working_dir = '/Users/alvarosalgado/Google Drive/Bioinformática/!Qualificação_alvaro/YFV'
 
-if os.path.isdir(working_dir+'/2_OUTPUT')==False:
+if os.path.isdir(working_dir+'/2_OUTPUT/')==False:
     os.mkdir(working_dir+'/2_OUTPUT/')
 if os.path.isdir(working_dir+'/2_OUTPUT/FIGURES/')==False:
     os.mkdir(working_dir+'/2_OUTPUT/FIGURES/')
@@ -769,7 +769,7 @@ ohe_df_use = pd.concat(dataframes)
 
 datasets_used = ohe_df_use["Dataset"].unique()
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
 
     log.write("{0}\nDatasets for training:\n".format(x))
@@ -788,7 +788,7 @@ negative = len(y_train) - positive
 scale_pos_weight = negative/positive
 
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nTest Dataset Size: {1}%\n\n".format(x, test_size*100))
 
@@ -819,14 +819,14 @@ params = {
         'n_estimators': [100, 10000]
         }
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nParameters used for XGBoost grid search CV:\n{1}\n\n".format(x, params))
 positive_weight = 0.01
 grid = grid_cv_xgb(X_train, y_train, scale_pos_weight, params, analysis, folds = 5)
 best_params = grid.best_params_
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nBest Parameters:\n{1}\n\n".format(x, best_params))
 
@@ -835,7 +835,7 @@ results = pd.DataFrame(grid.cv_results_)
 results.to_csv(tab_dir+'/{0}_xgb-grid-search-results-01_{1}.csv'.format(analysis, datetime.datetime.now()), index=False)
 results["mean_test_roc_auc"].unique()
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nThe grid search CV found in XGBoost that resulted in the following ROC-AUC scores:\n{1}\n\n".format(x, results["mean_test_roc_auc"].unique()))
     log.write("Therefore, the best parameters chosen are:\n{0}\n\n".format(best_params))
@@ -853,7 +853,7 @@ with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
 """XGB------------------------------------------------------------------------"""
 
 method = 'XGB'
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(x, method))
 
@@ -865,7 +865,7 @@ best_params = {'colsample_bytree': 0.3,
 
 xgb = final_xgb(X_train, y_train, X_test, y_test, scale_pos_weight, best_params, analysis)
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nXGBoost Model:\n{1}\n\n".format(x, xgb))
 
@@ -906,7 +906,7 @@ plot_roc(fpr_all, tpr_all, score_roc_auc_all, analysis, method, 'Full')
 cm_test = confusion_matrix(y_test, y_test_pred)
 cm_all = confusion_matrix(y, y_all_pred)
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nXGBoost Confusion Matrices:\n\nTest Dataset:\n{1}\n\nFull Dataset:\n{2}\n\n".format(x, cm_test, cm_all))
 
@@ -942,7 +942,7 @@ ax = plot_confusion_matrix(y, y_all_pred,
 #%%
 method = 'RF'
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(x, method))
 
@@ -957,7 +957,7 @@ rf = RandomForestClassifier(n_estimators=100,
 
 rf.fit(X_train, y_train)
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nRandom Forest Model:\n{1}\n\n".format(x, rf))
 
@@ -1000,7 +1000,7 @@ plot_roc(fpr_all, tpr_all, score_roc_auc_all, analysis, method, 'Full')
 cm_test = confusion_matrix(y_test, y_test_pred)
 cm_all = confusion_matrix(y, y_all_pred)
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nRandom Forest Confusion Matrices:\n\nTest Dataset:\n{1}\n\nFull Dataset:\n{2}\n\n".format(x, cm_test, cm_all))
 
@@ -1035,7 +1035,7 @@ ax = plot_confusion_matrix(y, y_all_pred,
 import Logistic_regression_modified as lr
 method = 'MLR'
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(x, method))
 
@@ -1081,7 +1081,7 @@ plot_roc(fpr_all, tpr_all, score_roc_auc_all, analysis, method, 'Full')
 cm_test = confusion_matrix(y_test, y_test_pred)
 cm_all = confusion_matrix(y, y_all_pred)
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nMod Logistic Regression Confusion Matrices:\n\nTest Dataset:\n{1}\n\nFull Dataset:\n{2}\n\n".format(x, cm_test, cm_all))
 
@@ -1111,7 +1111,7 @@ ax = plot_confusion_matrix(y, y_all_pred,
 
 
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nPerformance Table\n\n{1}\n\n".format(x, performance_df))
 
@@ -1136,7 +1136,7 @@ xgb_shap_values_df = pd.DataFrame(xgb_shap_values,
                                  index=X_train.index,
                                  columns=X_train.columns)
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nExample SHAP values for Random Forest in One Hot Encoded format:\n\n{1}\n\n".format(x, rf_shap_values_df.iloc[0:7, 0:2]
 ))
@@ -1145,7 +1145,7 @@ with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
 rf_shap_values_df = ohe_inverse(rf_shap_values_df)
 xgb_shap_values_df = ohe_inverse(xgb_shap_values_df)
 
-with open(out_dir+'/log_MAIN_YFV_HUMAN.txt', 'a') as log:
+with open(log_file, 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\nExample SHAP values for Random Forest in Original Genomic Position format:\n\n{1}\n\n".format(x, rf_shap_values_df.iloc[0:7, 0:1]
 ))
