@@ -341,6 +341,7 @@ ALL_df.drop(np.arange(1,143), axis=1, inplace=True)
 ALL_df.drop(np.arange(10223,11004), axis=1, inplace=True)
 
 ALL_df.shape
+ALL_df.to_pickle(pik_dir+'/NHP_YFV_original_seq_df.pkl')
 
 #%%
 

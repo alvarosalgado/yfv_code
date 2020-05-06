@@ -3,7 +3,6 @@
 From 'YFV_Ct_Callithrix_main_rev1.ipynb'
 """
 
-
 from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.Alphabet import IUPAC
@@ -34,9 +33,6 @@ cwd = os.getcwd()
 
 import shap
 
-# import xgboost
-# xgboost.__version__
-# sklearn.__version__
 """
 #######################################################################
 Import data
@@ -136,9 +132,6 @@ def initial_xgb_model(X_train, y_train, X_test, y_test, scale_pos_weight, analys
 Grid Search XGBoost
 #######################################################################
 """
-
-# sorted(sklearn.metrics.SCORERS.keys())
-
 def grid_cv_xgb(X_train, y_train, scale_pos_weight, params, analysis, folds = 5):
     xgb = XGBClassifier(objective='binary:logistic', njobs=4, random_state=0, scale_pos_weight=scale_pos_weight)
 
@@ -253,7 +246,6 @@ def logistic_regression(X_train, y_train, X, k=10):
 
     #  Use ohe_normalized_alphas to predict
     return (alphas, ohe_normalized_alphas, e, ave_MSE)
-
 """
 #######################################################################
 Plot ROC
@@ -612,10 +604,6 @@ def validate_SNV(seq_df, imp_merged, size=50):
 Plot confusion matrix
 #######################################################################
 """
-# print(sklearn.__version__)
-# cm = confusion_matrix(y_test, y_test_pred)
-
-
 def plot_confusion_matrix(y_true, y_pred, classes, method,
                           dataset,
                           analysis,
@@ -631,7 +619,6 @@ def plot_confusion_matrix(y_true, y_pred, classes, method,
     # Only use the labels that appear in the data
     # classes = classes[unique_labels(y_true, y_pred)]
     if normalize:
-        # cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         cm = cm.astype('float') / cm.sum()
         print("Normalized confusion matrix")
     else:
@@ -743,7 +730,6 @@ with open(log_file, 'w') as log:
     log.write('LOG file for HUMAN YFV MAIN\n{0}\n\n'.format(t))
 
 
-
 analysis = 'HUMAN'
 # Data inmport
 # %%
@@ -790,7 +776,6 @@ test_size = 0.5
 positive = y_train.sum()
 negative = len(y_train) - positive
 scale_pos_weight = negative/positive
-
 
 with open(log_file, 'a') as log:
     t = datetime.datetime.now()
@@ -845,12 +830,7 @@ with open(log_file, 'a') as log:
     log.write("Therefore, the best parameters chosen are:\n{0}\n\n".format(best_params))
 
 
-# params_series = results.loc[results['mean_test_roc_auc'] == np.max(results['mean_test_roc_auc']), 'params']
-# for p in params_series:
-#     print(p)
-#
-# print(best_params)
-# print(params_series[0])
+
 
 # Train models
 # %%

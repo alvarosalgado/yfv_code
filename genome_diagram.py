@@ -173,7 +173,7 @@ genes_track.add_set(feature_set2)
 #%%
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 
-snv_df = pd.read_csv(out_dir+'/SNV_RESULTS.csv')
+snv_df = pd.read_csv(out_dir+'/SNV_HUMAN_YFV_RESULTS.csv')
 snv_series = snv_df.iloc[:, 2]
 feature_set_SNV = GenomeDiagram.FeatureSet()
 
@@ -302,6 +302,7 @@ seq_df.drop(first_columns, axis=1, inplace=True)
 
 #Remove first sequence, used only for column numbering
 seq_df.drop(seq_df.index[0], axis=0, inplace=True)
+seq_df.drop(seq_df.index[0], axis=0, inplace=True)
 
 
 #%%
@@ -396,7 +397,7 @@ genes_track.add_set(feature_set2)
 #%%
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 
-snv_df = pd.read_csv(out_dir+'SNV_RESULTS.csv')
+snv_df = pd.read_csv(out_dir+'/SNV_HUMAN_YFV_RESULTS.csv')
 snv_series = snv_df.iloc[:, 2]
 feature_set_SNV = GenomeDiagram.FeatureSet()
 
