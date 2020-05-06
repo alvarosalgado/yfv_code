@@ -275,8 +275,12 @@ def one_hot_encoding(seq_df, pik_dir):
 
 working_dir = '/Users/alvarosalgado/Google Drive/Bioinformática/!Qualificação_alvaro/YFV'
 
-if os.path.isdir(working_dir+'/2_OUTPUT/NHP')==False:
+if os.path.isdir(working_dir+'/2_OUTPUT/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/')
+
+if os.path.isdir(working_dir+'/2_OUTPUT/NHP/')==False:
     os.mkdir(working_dir+'/2_OUTPUT/NHP/')
+
 if os.path.isdir(working_dir+'/2_OUTPUT/NHP/FIGURES/')==False:
     os.mkdir(working_dir+'/2_OUTPUT/NHP/FIGURES/')
 if os.path.isdir(working_dir+'/2_OUTPUT/NHP/TABLES/')==False:

@@ -15,12 +15,34 @@ from reportlab.lib.units import cm
 from Bio.Graphics import GenomeDiagram
 from Bio import SeqIO
 
+import os, sys
+
+
+""" /////////////////////////////////////////////////////////////////////// """
+
+""" SET THE STAGE... """
+
+# Create OUTPUT dir inside DATA dir, where all processed data, figures, tbles, ect will be stored
+
 working_dir = '/Users/alvarosalgado/Google Drive/Bioinformática/!Qualificação_alvaro/YFV'
 
-out_dir = working_dir+'/2_OUTPUT'
-fig_dir = working_dir+'/2_OUTPUT/FIGURES'
-tab_dir = working_dir+'/2_OUTPUT/TABLES'
-pik_dir = working_dir+'/2_OUTPUT/PICKLE'
+if os.path.isdir(working_dir+'/2_OUTPUT/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/')
+
+if os.path.isdir(working_dir+'/2_OUTPUT/HUMAN/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/HUMAN/')
+
+if os.path.isdir(working_dir+'/2_OUTPUT/HUMAN/FIGURES/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/HUMAN/FIGURES/')
+if os.path.isdir(working_dir+'/2_OUTPUT/HUMAN/TABLES/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/HUMAN/TABLES/')
+if os.path.isdir(working_dir+'/2_OUTPUT/HUMAN/PICKLE/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/HUMAN/PICKLE/')
+
+out_dir = working_dir+'/2_OUTPUT/HUMAN'
+fig_dir = working_dir+'/2_OUTPUT/HUMAN/FIGURES'
+tab_dir = working_dir+'/2_OUTPUT/HUMAN/TABLES'
+pik_dir = working_dir+'/2_OUTPUT/HUMAN/PICKLE'
 data_dir = working_dir+'/1_DATA/Human_Analisys'
 
 
@@ -173,7 +195,7 @@ genes_track.add_set(feature_set2)
 #%%
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 
-snv_df = pd.read_csv(out_dir+'/SNV_HUMAN_YFV_RESULTS.csv')
+snv_df = pd.read_csv(tab_dir+'/SNV_HUMAN_YFV_RESULTS.csv')
 snv_series = snv_df.iloc[:, 2]
 feature_set_SNV = GenomeDiagram.FeatureSet()
 
@@ -239,7 +261,26 @@ HUMAN_YFV_diagram.write(fig_dir+"/HUMAN_YFV_diagram.svg", "SVG")
 """///////////////////////////////////////////////////////////////////////"""
 
 
+""" /////////////////////////////////////////////////////////////////////// """
+
+""" SET THE STAGE... """
+
+# Create OUTPUT dir inside DATA dir, where all processed data, figures, tbles, ect will be stored
+
 working_dir = '/Users/alvarosalgado/Google Drive/Bioinformática/!Qualificação_alvaro/YFV'
+
+if os.path.isdir(working_dir+'/2_OUTPUT/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/')
+
+if os.path.isdir(working_dir+'/2_OUTPUT/NHP/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/NHP/')
+
+if os.path.isdir(working_dir+'/2_OUTPUT/NHP/FIGURES/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/NHP/FIGURES/')
+if os.path.isdir(working_dir+'/2_OUTPUT/NHP/TABLES/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/NHP/TABLES/')
+if os.path.isdir(working_dir+'/2_OUTPUT/NHP/PICKLE/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/NHP/PICKLE/')
 
 out_dir = working_dir+'/2_OUTPUT/NHP'
 fig_dir = working_dir+'/2_OUTPUT/NHP/FIGURES'
@@ -301,7 +342,6 @@ seq_df.drop(last_colums, axis=1, inplace=True)
 seq_df.drop(first_columns, axis=1, inplace=True)
 
 #Remove first sequence, used only for column numbering
-seq_df.drop(seq_df.index[0], axis=0, inplace=True)
 seq_df.drop(seq_df.index[0], axis=0, inplace=True)
 
 
@@ -397,7 +437,7 @@ genes_track.add_set(feature_set2)
 #%%
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 
-snv_df = pd.read_csv(out_dir+'/SNV_HUMAN_YFV_RESULTS.csv')
+snv_df = pd.read_csv(tab_dir+'/SNV_NHP_YFV_RESULTS.csv')
 snv_series = snv_df.iloc[:, 2]
 feature_set_SNV = GenomeDiagram.FeatureSet()
 
@@ -430,7 +470,7 @@ entropy_track.add_set(entropy_graph_set)
 
 
 
-HUMAN_YFV_diagram = GenomeDiagram.Diagram("YFV Human Infections",
+HUMAN_YFV_diagram = GenomeDiagram.Diagram("YFV NHP Ct Investigation",
     pagesize='A4',
     orientation='portrait',
     x=0.2,
@@ -441,4 +481,4 @@ HUMAN_YFV_diagram.add_track(entropy_track, 2)
 HUMAN_YFV_diagram.add_track(SNV_track, 3)
 
 HUMAN_YFV_diagram.draw(format="linear", orientation="landscape", pagesize='A4', fragments=1, start=0, end=len(ref_polyprot))
-HUMAN_YFV_diagram.write(fig_dir+"/HUMAN_YFV_diagram.svg", "SVG")
+HUMAN_YFV_diagram.write(fig_dir+"/NHP_YFV_diagram.svg", "SVG")

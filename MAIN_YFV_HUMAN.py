@@ -811,7 +811,9 @@ params = {
 with open(log_file, 'a') as log:
     t = datetime.datetime.now()
     log.write("{0}\nParameters used for XGBoost grid search CV:\n{1}\n\n".format(t, params))
-positive_weight = 0.01
+
+# positive_weight = 0.01
+
 grid = grid_cv_xgb(X_train, y_train, scale_pos_weight, params, analysis, folds = 5)
 best_params = grid.best_params_
 

@@ -57,19 +57,23 @@ functions
 
 working_dir = '/Users/alvarosalgado/Google Drive/Bioinformática/!Qualificação_alvaro/YFV'
 
-if os.path.isdir(working_dir+'/2_OUTPUT')==False:
+if os.path.isdir(working_dir+'/2_OUTPUT/')==False:
     os.mkdir(working_dir+'/2_OUTPUT/')
-if os.path.isdir(working_dir+'/2_OUTPUT/FIGURES/')==False:
-    os.mkdir(working_dir+'/2_OUTPUT/FIGURES/')
-if os.path.isdir(working_dir+'/2_OUTPUT/TABLES/')==False:
-    os.mkdir(working_dir+'/2_OUTPUT/TABLES/')
-if os.path.isdir(working_dir+'/2_OUTPUT/PICKLE/')==False:
-    os.mkdir(working_dir+'/2_OUTPUT/PICKLE/')
 
-out_dir = working_dir+'/2_OUTPUT'
-fig_dir = working_dir+'/2_OUTPUT/FIGURES'
-tab_dir = working_dir+'/2_OUTPUT/TABLES'
-pik_dir = working_dir+'/2_OUTPUT/PICKLE'
+if os.path.isdir(working_dir+'/2_OUTPUT/HUMAN/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/HUMAN/')
+
+if os.path.isdir(working_dir+'/2_OUTPUT/HUMAN/FIGURES/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/HUMAN/FIGURES/')
+if os.path.isdir(working_dir+'/2_OUTPUT/HUMAN/TABLES/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/HUMAN/TABLES/')
+if os.path.isdir(working_dir+'/2_OUTPUT/HUMAN/PICKLE/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/HUMAN/PICKLE/')
+
+out_dir = working_dir+'/2_OUTPUT/HUMAN'
+fig_dir = working_dir+'/2_OUTPUT/HUMAN/FIGURES'
+tab_dir = working_dir+'/2_OUTPUT/HUMAN/TABLES'
+pik_dir = working_dir+'/2_OUTPUT/HUMAN/PICKLE'
 data_dir = working_dir+'/1_DATA/Human_Analisys'
 
 log_file = out_dir+'/LOG_preprocessing_{0}.txt'.format(datetime.datetime.now())
