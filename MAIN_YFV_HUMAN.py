@@ -489,10 +489,13 @@ Merges into one array.
 Normalizes again.
 #######################################################################
 """
-def get_merged_results(xgb_summary, rf_summary, sorted_alphas, analysis, top=180):
-    xgb_summary_top = xgb_summary[:top]
-    rf_summary_top = rf_summary[:top]
-    sorted_alphas_top = sorted_alphas[:top]
+def get_merged_results(xgb_summary, rf_summary, sorted_alphas, analysis, min_importance_percentage=0.1):
+    # xgb_summary_top = xgb_summary[:top]
+    # rf_summary_top = rf_summary[:top]
+    # sorted_alphas_top = sorted_alphas[:top]
+    xgb_summary_top = xgb_summary
+    rf_summary_top = rf_summary
+    sorted_alphas_top = sorted_alphas
 
     xgb_sum = xgb_summary_top.sum()
     rf_sum = rf_summary_top.sum()
@@ -518,7 +521,7 @@ def get_merged_results(xgb_summary, rf_summary, sorted_alphas, analysis, top=180
 
 
     # Keeps only those that have an importance up to 10% of the first attribute's importance.
-    min_imp = results_all[0]/100
+    min_imp = results_all[0]*min_importance_percentage
     last_imp_pos = 0
     previous_pos = 0
     for pos, imp in results_all.iteritems():
@@ -532,19 +535,19 @@ def get_merged_results(xgb_summary, rf_summary, sorted_alphas, analysis, top=180
 
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 8), constrained_layout=True)
 
-    ax.barh(results_all.index[0:top], results_all[0:top])
-    ax.set_yticks(results_all.index[0:top])
-    ax.set_yticklabels(results_all.index[0:top])
+    ax.barh(results_all.index, results_all)
+    ax.set_yticks(results_all.index)
+    ax.set_yticklabels(results_all.index)
     ax.invert_yaxis()  # labels read top-to-bottom
     ax.set_xlabel('Feature Importance')
     # ax.set_title('HIV {} - {} most important genomic positions found by XGBoost, Random Forest and Modified Logistic Regression together.'.format(subtype, top))
     ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
 
-    fig.suptitle('Human Yellow Fever Infection Severity Analysis - {} most important genomic positions found by XGBoost, Random Forest and Modified Logistic Regression together.'.format(top), fontsize=16)
+    fig.suptitle('Human Yellow Fever Infection Severity Analysis - {} most important genomic positions found by XGBoost, Random Forest and Modified Logistic Regression together.'.format(results_all.shape[0]), fontsize=16)
 
     # fig.tight_layout();
 
-    fig.savefig(fig_dir+"/{}_combined_{}_summary.png".format(analysis, top), format='png', dpi=300, transparent=False)
+    fig.savefig(fig_dir+"/{}_combined_{}_summary.png".format(analysis, results_all.shape[0]), format='png', dpi=300, transparent=False)
 
     return results_all
 
@@ -881,7 +884,7 @@ from sklearn.metrics import classification_report,confusion_matrix,roc_curve,auc
 
 print(classification_report(y_test,y_test_pred))
 
-with open(out_dir+'LOG_MAIN_ML.txt', 'a') as log:
+with open(out_dir+'/LOG_MAIN_ML.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\n'---Classification Report---'\n{1}\n\n".format(x, method))
     log.write("{0}\n\n".format(classification_report(y_test,y_test_pred)))
@@ -983,7 +986,7 @@ score_all = rf.score(X, y)
 
 print(classification_report(y_test,y_test_pred))
 
-with open(out_dir+'LOG_MAIN_ML.txt', 'a') as log:
+with open(out_dir+'/LOG_MAIN_ML.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\n'---Classification Report---'\n{1}\n\n".format(x, method))
     log.write("{0}\n\n".format(classification_report(y_test,y_test_pred)))
@@ -1066,7 +1069,7 @@ score_roc_auc_all = roc_auc_score(y, y_all_pred)
 
 print(classification_report(y_test,y_test_pred))
 
-with open(out_dir+'LOG_MAIN_ML.txt', 'a') as log:
+with open(out_dir+'/LOG_MAIN_ML.txt', 'a') as log:
     x = datetime.datetime.now()
     log.write("{0}\n'---Classification Report---'\n{1}\n\n".format(x, method))
     log.write("{0}\n\n".format(classification_report(y_test,y_test_pred)))
@@ -1339,7 +1342,7 @@ for nnpos in imp_merged.index:
 
 SNV_RESULTS = pd.DataFrame(rows, index=imp_merged.index, columns=cols)
 
-SNV_RESULTS.to_csv(out_dir+'SNV_RESULTS.csv')
+SNV_RESULTS.to_csv(out_dir+'/SNV_RESULTS.csv')
 
 
 
