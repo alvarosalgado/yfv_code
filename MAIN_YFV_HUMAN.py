@@ -720,23 +720,27 @@ working_dir = '/Users/alvarosalgado/Google Drive/Bioinformática/!Qualificaça�
 
 if os.path.isdir(working_dir+'/2_OUTPUT/')==False:
     os.mkdir(working_dir+'/2_OUTPUT/')
-if os.path.isdir(working_dir+'/2_OUTPUT/FIGURES/')==False:
-    os.mkdir(working_dir+'/2_OUTPUT/FIGURES/')
-if os.path.isdir(working_dir+'/2_OUTPUT/TABLES/')==False:
-    os.mkdir(working_dir+'/2_OUTPUT/TABLES/')
-if os.path.isdir(working_dir+'/2_OUTPUT/PICKLE/')==False:
-    os.mkdir(working_dir+'/2_OUTPUT/PICKLE/')
 
-out_dir = working_dir+'/2_OUTPUT'
-fig_dir = working_dir+'/2_OUTPUT/FIGURES'
-tab_dir = working_dir+'/2_OUTPUT/TABLES'
-pik_dir = working_dir+'/2_OUTPUT/PICKLE'
+if os.path.isdir(working_dir+'/2_OUTPUT/HUMAN/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/HUMAN/')
+
+if os.path.isdir(working_dir+'/2_OUTPUT/HUMAN/FIGURES/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/HUMAN/FIGURES/')
+if os.path.isdir(working_dir+'/2_OUTPUT/HUMAN/TABLES/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/HUMAN/TABLES/')
+if os.path.isdir(working_dir+'/2_OUTPUT/HUMAN/PICKLE/')==False:
+    os.mkdir(working_dir+'/2_OUTPUT/HUMAN/PICKLE/')
+
+out_dir = working_dir+'/2_OUTPUT/HUMAN'
+fig_dir = working_dir+'/2_OUTPUT/HUMAN/FIGURES'
+tab_dir = working_dir+'/2_OUTPUT/HUMAN/TABLES'
+pik_dir = working_dir+'/2_OUTPUT/HUMAN/PICKLE'
 data_dir = working_dir+'/1_DATA/Human_Analisys'
 
-log_file = out_dir+'/LOG_YFV_HUMAN_MAIN_{0}.txt'.format(datetime.datetime.now())
+t = datetime.datetime.now()
+log_file = out_dir+'/LOG_YFV_HUMAN_MAIN_{0}.txt'.format(t)
 with open(log_file, 'w') as log:
-    x = datetime.datetime.now()
-    log.write('LOG file for HUMAN YFV MAIN\n{0}\n\n'.format(x))
+    log.write('LOG file for HUMAN YFV MAIN\n{0}\n\n'.format(t))
 
 
 
@@ -770,9 +774,9 @@ ohe_df_use = pd.concat(dataframes)
 datasets_used = ohe_df_use["Dataset"].unique()
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
+    t = datetime.datetime.now()
 
-    log.write("{0}\nDatasets for training:\n".format(x))
+    log.write("{0}\nDatasets for training:\n".format(t))
     for dataset in datasets_used:
         log.write("{0}, ".format(dataset))
     log.write("\n\n")
@@ -789,8 +793,8 @@ scale_pos_weight = negative/positive
 
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nTest Dataset Size: {1}%\n\n".format(x, test_size*100))
+    t = datetime.datetime.now()
+    log.write("{0}\nTest Dataset Size: {1}%\n\n".format(t, test_size*100))
 
 y.shape
 y.sum()
@@ -820,15 +824,15 @@ params = {
         }
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nParameters used for XGBoost grid search CV:\n{1}\n\n".format(x, params))
+    t = datetime.datetime.now()
+    log.write("{0}\nParameters used for XGBoost grid search CV:\n{1}\n\n".format(t, params))
 positive_weight = 0.01
 grid = grid_cv_xgb(X_train, y_train, scale_pos_weight, params, analysis, folds = 5)
 best_params = grid.best_params_
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nBest Parameters:\n{1}\n\n".format(x, best_params))
+    t = datetime.datetime.now()
+    log.write("{0}\nBest Parameters:\n{1}\n\n".format(t, best_params))
 
 
 results = pd.DataFrame(grid.cv_results_)
@@ -836,8 +840,8 @@ results.to_csv(tab_dir+'/{0}_xgb-grid-search-results-01_{1}.csv'.format(analysis
 results["mean_test_roc_auc"].unique()
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nThe grid search CV found in XGBoost that resulted in the following ROC-AUC scores:\n{1}\n\n".format(x, results["mean_test_roc_auc"].unique()))
+    t = datetime.datetime.now()
+    log.write("{0}\nThe grid search CV found in XGBoost that resulted in the following ROC-AUC scores:\n{1}\n\n".format(t, results["mean_test_roc_auc"].unique()))
     log.write("Therefore, the best parameters chosen are:\n{0}\n\n".format(best_params))
 
 
@@ -854,8 +858,8 @@ with open(log_file, 'a') as log:
 
 method = 'XGB'
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(x, method))
+    t = datetime.datetime.now()
+    log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(t, method))
 
 best_params = {'colsample_bytree': 0.3,
  'learning_rate': 0.001,
@@ -866,8 +870,8 @@ best_params = {'colsample_bytree': 0.3,
 xgb = final_xgb(X_train, y_train, X_test, y_test, scale_pos_weight, best_params, analysis)
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nXGBoost Model:\n{1}\n\n".format(x, xgb))
+    t = datetime.datetime.now()
+    log.write("{0}\nXGBoost Model:\n{1}\n\n".format(t, xgb))
 
 # Probability predicted by model for
 # test dataset and full dataset (train + test)
@@ -884,9 +888,9 @@ from sklearn.metrics import classification_report,confusion_matrix,roc_curve,auc
 
 print(classification_report(y_test,y_test_pred))
 
-with open(out_dir+'/LOG_MAIN_ML.txt', 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\n'---Classification Report---'\n{1}\n\n".format(x, method))
+with open(log_file, 'a') as log:
+    t = datetime.datetime.now()
+    log.write("{0}\n'---Classification Report---'\n{1}\n\n".format(t, method))
     log.write("{0}\n\n".format(classification_report(y_test,y_test_pred)))
 
 
@@ -907,8 +911,8 @@ cm_test = confusion_matrix(y_test, y_test_pred)
 cm_all = confusion_matrix(y, y_all_pred)
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nXGBoost Confusion Matrices:\n\nTest Dataset:\n{1}\n\nFull Dataset:\n{2}\n\n".format(x, cm_test, cm_all))
+    t = datetime.datetime.now()
+    log.write("{0}\nXGBoost Confusion Matrices:\n\nTest Dataset:\n{1}\n\nFull Dataset:\n{2}\n\n".format(t, cm_test, cm_all))
 
 performance_df.loc[method, 'Test Dataset']['ROC-AUC'] = score_roc_auc_test
 performance_df.loc[method, 'Full Dataset']['ROC-AUC'] = score_roc_auc_all
@@ -943,8 +947,8 @@ ax = plot_confusion_matrix(y, y_all_pred,
 method = 'RF'
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(x, method))
+    t = datetime.datetime.now()
+    log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(t, method))
 
 weight = {0: 1, 1: scale_pos_weight}
 
@@ -958,8 +962,8 @@ rf = RandomForestClassifier(n_estimators=100,
 rf.fit(X_train, y_train)
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nRandom Forest Model:\n{1}\n\n".format(x, rf))
+    t = datetime.datetime.now()
+    log.write("{0}\nRandom Forest Model:\n{1}\n\n".format(t, rf))
 
 y_test_prob = rf.predict_proba(X_test)
 y_all_prob = rf.predict_proba(X)
@@ -986,9 +990,9 @@ score_all = rf.score(X, y)
 
 print(classification_report(y_test,y_test_pred))
 
-with open(out_dir+'/LOG_MAIN_ML.txt', 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\n'---Classification Report---'\n{1}\n\n".format(x, method))
+with open(log_file, 'a') as log:
+    t = datetime.datetime.now()
+    log.write("{0}\n'---Classification Report---'\n{1}\n\n".format(t, method))
     log.write("{0}\n\n".format(classification_report(y_test,y_test_pred)))
 
 
@@ -1001,8 +1005,8 @@ cm_test = confusion_matrix(y_test, y_test_pred)
 cm_all = confusion_matrix(y, y_all_pred)
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nRandom Forest Confusion Matrices:\n\nTest Dataset:\n{1}\n\nFull Dataset:\n{2}\n\n".format(x, cm_test, cm_all))
+    t = datetime.datetime.now()
+    log.write("{0}\nRandom Forest Confusion Matrices:\n\nTest Dataset:\n{1}\n\nFull Dataset:\n{2}\n\n".format(t, cm_test, cm_all))
 
 performance_df.loc[method, 'Test Dataset']['ROC-AUC'] = score_roc_auc_test
 performance_df.loc[method, 'Full Dataset']['ROC-AUC'] = score_roc_auc_all
@@ -1036,8 +1040,8 @@ import Logistic_regression_modified as lr
 method = 'MLR'
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(x, method))
+    t = datetime.datetime.now()
+    log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(t, method))
 
 (alphas, ohe_normalized_alphas, e, ave_MSE) = logistic_regression(X_train, y_train, X, k=10)
 
@@ -1069,9 +1073,9 @@ score_roc_auc_all = roc_auc_score(y, y_all_pred)
 
 print(classification_report(y_test,y_test_pred))
 
-with open(out_dir+'/LOG_MAIN_ML.txt', 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\n'---Classification Report---'\n{1}\n\n".format(x, method))
+with open(log_file, 'a') as log:
+    t = datetime.datetime.now()
+    log.write("{0}\n'---Classification Report---'\n{1}\n\n".format(t, method))
     log.write("{0}\n\n".format(classification_report(y_test,y_test_pred)))
 
 plot_roc(fpr_test, tpr_test, score_roc_auc_test, analysis, method, 'Test')
@@ -1082,8 +1086,8 @@ cm_test = confusion_matrix(y_test, y_test_pred)
 cm_all = confusion_matrix(y, y_all_pred)
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nMod Logistic Regression Confusion Matrices:\n\nTest Dataset:\n{1}\n\nFull Dataset:\n{2}\n\n".format(x, cm_test, cm_all))
+    t = datetime.datetime.now()
+    log.write("{0}\nMod Logistic Regression Confusion Matrices:\n\nTest Dataset:\n{1}\n\nFull Dataset:\n{2}\n\n".format(t, cm_test, cm_all))
 
 performance_df.loc[method, 'Test Dataset']['ROC-AUC'] = score_roc_auc_test
 performance_df.loc[method, 'Full Dataset']['ROC-AUC'] = score_roc_auc_all
@@ -1112,8 +1116,8 @@ ax = plot_confusion_matrix(y, y_all_pred,
 
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nPerformance Table\n\n{1}\n\n".format(x, performance_df))
+    t = datetime.datetime.now()
+    log.write("{0}\nPerformance Table\n\n{1}\n\n".format(t, performance_df))
 
 """
 #######################################################################
@@ -1137,8 +1141,8 @@ xgb_shap_values_df = pd.DataFrame(xgb_shap_values,
                                  columns=X_train.columns)
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nExample SHAP values for Random Forest in One Hot Encoded format:\n\n{1}\n\n".format(x, rf_shap_values_df.iloc[0:7, 0:2]
+    t = datetime.datetime.now()
+    log.write("{0}\nExample SHAP values for Random Forest in One Hot Encoded format:\n\n{1}\n\n".format(t, rf_shap_values_df.iloc[0:7, 0:2]
 ))
 
 
@@ -1146,8 +1150,8 @@ rf_shap_values_df = ohe_inverse(rf_shap_values_df)
 xgb_shap_values_df = ohe_inverse(xgb_shap_values_df)
 
 with open(log_file, 'a') as log:
-    x = datetime.datetime.now()
-    log.write("{0}\nExample SHAP values for Random Forest in Original Genomic Position format:\n\n{1}\n\n".format(x, rf_shap_values_df.iloc[0:7, 0:1]
+    t = datetime.datetime.now()
+    log.write("{0}\nExample SHAP values for Random Forest in Original Genomic Position format:\n\n{1}\n\n".format(t, rf_shap_values_df.iloc[0:7, 0:1]
 ))
 """
 #######################################################################
@@ -1195,7 +1199,6 @@ names as keys and positions (start:end in "biopython location") as values.
 """
 for feature in ref_polyprot.features:
     print(feature)
-feature.type
 
 #%%
 dic_prot = {}
@@ -1342,7 +1345,7 @@ for nnpos in imp_merged.index:
 
 SNV_RESULTS = pd.DataFrame(rows, index=imp_merged.index, columns=cols)
 
-SNV_RESULTS.to_csv(out_dir+'/SNV_HUMAN_YFV_RESULTS.csv')
+SNV_RESULTS.to_csv(tab_dir+'/SNV_HUMAN_YFV_RESULTS.csv')
 
 
 
