@@ -1167,7 +1167,7 @@ Analyze results
 #######################################################################
 """
 
-imp_merged = get_merged_results(xgb_summary, rf_summary, sorted_alphas, analysis, xgb_summary.shape[0])
+imp_merged = get_merged_results(xgb_summary, rf_summary, sorted_alphas, analysis, 0.01)
 
 
 """//////////////////////////////////////////////"""
@@ -1180,7 +1180,7 @@ import ref_genome_polyprot_toolbox as g_tool
 case = "HUMAN_YFV"
 
 ref_genome_file = working_dir+'/3_REFERENCE/YFV_REF_NC_002031.fasta'
-ref_polyprot_file = working_dir+'/3_REFERENCE/YFV_REF_NC_002031.gb'
+ref_polyprot_file = working_dir+'/3_REFERENCE/EDITED_YFV_REF_NC_002031.gb'
 # querry_seq_file = data_dir+'/FUNED/ALIGNED_FUNED_SARS-CoV-2.fasta'
 
 ref_genome = SeqIO.read(ref_genome_file, "fasta").lower()
@@ -1203,7 +1203,7 @@ dic_prot = {}
 for feature in ref_polyprot.features:
     if feature.type == 'mat_peptide':
         value = (feature.location)
-        key = (feature.qualifiers['product'][0])
+        key = (feature.qualifiers['gene'][0])
         dic_prot[key] = value
 
 
@@ -1342,7 +1342,7 @@ for nnpos in imp_merged.index:
 
 SNV_RESULTS = pd.DataFrame(rows, index=imp_merged.index, columns=cols)
 
-SNV_RESULTS.to_csv(out_dir+'/SNV_RESULTS.csv')
+SNV_RESULTS.to_csv(out_dir+'/SNV_HUMAN_YFV_RESULTS.csv')
 
 
 
@@ -1376,75 +1376,3 @@ SNV_RESULTS.to_csv(out_dir+'/SNV_RESULTS.csv')
 
 
 # The analysis below and the results shown in "table" demonstrate the power of XGBoost. It only picked 3 features, and there was a total of 5 that really had any informative value. All the rest, that both RF and LR gave some importance (albeit small), have no information at all, given that they do not contain a nucleotide that is different from the most frequent one in the other class and in the Alouatta samples.
-(table) = validate_SNV(seq_df, imp_merged)
-
-table.to_csv(out_dir+'/{}_SNV.csv'.format(analysis))
-
-table_clean = table.copy()
-
-for col in table_clean.columns:
-    if table_clean.loc['Non-serious', col] == table_clean.loc['Serious', col]:
-        table_clean.drop(col, axis=1, inplace=True)
-
-table_clean.to_csv(out_dir+'/{}_SNV_clean.csv'.format(analysis))
-
-
-
-
-snv_to_analyze = table_clean.loc['Serious', :]
-
-
-
-import ref_genome_polyprot_toolbox as g_tool
-
-case = "HUMAN"
-
-ref_genome_file = '../DATA/Reference_GENBANK_YFV/YFV_BeH655417_JF912190.gb'
-ref_polyprot_file = '../DATA/Reference_GENBANK_YFV/YFV_BeH655417_JF912190_polyprot.gb'
-querry_seq_file = '../DATA/Human_Analisys/DATA/querry_seq_marielton.fas'
-
-ref_genome = SeqIO.read(ref_genome_file, "genbank")
-ref_polyprot = SeqIO.read(ref_polyprot_file, "genbank")
-querry = SeqIO.parse(querry_seq_file, "fasta")
-first_record = next(querry)
-querry_seq = first_record.seq
-
-seq_rel_start = g_tool.find_align_start(querry_seq, ref_genome, 20)
-dic_prot = g_tool.read_polyprotein(ref_polyprot)
-
-report_dic = {}
-
-nn_pos = 5720
-for nn_pos, nn in snv_to_analyze.iteritems():
-
-    dic = {}
-    # nn_pos = snv_to_analyze.index[1]
-    # nn = snv_to_analyze[nn_pos]
-    nn_pos = int(nn_pos)
-
-    (aa_pos, aa, codon, codon_pos) = g_tool.pos_aminoacid(nn_pos, seq_rel_start, ref_genome, ref_polyprot)
-
-    prot = g_tool.which_protein(nn_pos, aa_pos, aa, dic_prot, ref_polyprot, case)
-
-    (codon_seq, aa_seq, ref_pos, codon_ref, aa_ref, codon_pos) = g_tool.seq_snv_info(nn_pos, querry_seq, ref_genome, ref_polyprot)
-
-    codon_seq = list(codon_ref)
-    codon_seq[codon_pos] = nn
-    codon_seq = Seq("".join(codon_seq))
-    aa_seq = codon_seq.translate()
-
-    dic["protein"] = str(prot)
-    dic["Reference nn pos"] = str(ref_pos)
-    dic["Reference codon"] = str(codon_ref)
-    dic["Reference aa"] = str(aa_ref)
-    dic["Sequence codon"] = str(codon_seq)
-    dic["Sequence aa"] = str(aa_seq)
-    dic["Codon position (0, 1, 2)"] = str(codon_pos)
-
-    df = pd.DataFrame(dic, index=[nn_pos])
-    report_dic[nn_pos] = df
-
-table3 = pd.concat(list(report_dic.values()))
-table3.to_csv(out_dir+'/{}_SNV_proteins_info.csv'.format(analysis))
-
-performance_df.to_csv(tab_dir+'/{}_PERFORMANCE_models.csv'.format(analysis), index=True)
