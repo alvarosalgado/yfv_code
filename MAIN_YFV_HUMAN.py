@@ -729,7 +729,7 @@ analysis = 'HUMAN'
 t = datetime.datetime.now()
 log_file = out_dir+'/LOG_{1}_{0}.txt'.format(t, analysis)
 with open(log_file, 'w') as log:
-    log.write('LOG file for HUMAN YFV MAIN\n{0}\n\n'.format(t))
+    log.write('LOG file for {1} analysis\n{0}\n\n'.format(t, analysis))
 
 # Data inmport
 # %%

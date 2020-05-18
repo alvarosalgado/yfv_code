@@ -749,13 +749,14 @@ tab_dir = working_dir+'/2_OUTPUT/NHP/TABLES'
 pik_dir = working_dir+'/2_OUTPUT/NHP/PICKLE'
 data_dir = working_dir+'/1_DATA/Callithrix_Analysis/DATA/!CLEAN'
 
-t = datetime.datetime.now()
-log_file = out_dir+'/LOG_YFV_HUMAN_MAIN_{0}.txt'.format(t)
-with open(log_file, 'w') as log:
-    log.write('LOG file for HUMAN YFV MAIN\n{0}\n\n'.format(t))
-
-
 analysis = 'CAL'
+t = datetime.datetime.now()
+log_file = out_dir+'/LOG_{1}_{0}.txt'.format(t, analysis)
+with open(log_file, 'w') as log:
+    log.write('LOG file for {1} analysis\n{0}\n\n'.format(t, analysis))
+
+
+
 # Data inmport
 # %%
 pickle_ohe = pik_dir+'/OHE_NHP_YFV.pkl'
@@ -793,8 +794,8 @@ index_names = [['XGB', 'RF', 'MLR'], ['Test Dataset', 'Full Dataset']]
 multi_index = pd.MultiIndex.from_product(index_names, names=['Method', 'Dataset'])
 performance_df = pd.DataFrame(columns=['ROC-AUC', 'Accuracy', 'Precision'], index=multi_index)
 
-
-performance_df.to_csv(tab_dir+'/{}_PERFORMANCE_models.csv'.format(analysis), index=True)
+t = datetime.datetime.now()
+performance_df.to_csv(tab_dir+'/{1}_PERFORMANCE_models_{0}.csv'.format(t, analysis), index=True)
 
 # XGBoost Grid Search
 # %%
@@ -804,7 +805,7 @@ params = {
         'subsample': [1],
         'colsample_bytree': [0.3],
         'max_depth': [1, 3, 100],
-        'learning_rate': [0.001, 1],
+        'learning_rate': [0.001, 0.1, 1],
         'n_estimators': [100, 10000],
         'scale_pos_weight': [scale_pos_weight, 4, 6, 10]
         }
@@ -815,6 +816,12 @@ with open(log_file, 'a') as log:
 
 grid = grid_cv_xgb(X_train, y_train, 4, params, analysis, folds = 5)
 best_params = grid.best_params_
+
+# best_params = {'colsample_bytree': 0.3,
+#  'learning_rate': 0.001,
+#  'max_depth': 3,
+#  'n_estimators': 1000,
+#  'subsample': 1.0}
 
 with open(log_file, 'a') as log:
     t = datetime.datetime.now()
@@ -842,13 +849,8 @@ with open(log_file, 'a') as log:
     t = datetime.datetime.now()
     log.write("{0}\nStarting {1} Model////////////////////////////////////\n\n".format(t, method))
 
-# best_params = {'colsample_bytree': 0.3,
-#  'learning_rate': 0.001,
-#  'max_depth': 3,
-#  'n_estimators': 1000,
-#  'subsample': 1.0}
 
-# best scale_pos_weight = 4
+weight = scale_pos_weight
 xgb = final_xgb(X_train, y_train, X_test, y_test, 4, best_params, analysis)
 
 with open(log_file, 'a') as log:
@@ -1276,12 +1278,20 @@ def prot_info(nnpos, dic_prot, ref_genome):
 # str(aa_ref.seq)
 # str(codon.seq)
 
+translated_proteins = {}
+
+for prot in prot_seqs_dic:
+    translated_proteins[prot] = prot_seqs_dic[prot].translate()
+
+
+# str(translated_proteins['NS1'][345:355])
+
+'''Inserir essa informação dentro do próprio csv SNV_RESULTS em uma nova coluna'''
 
 
 
 
-
-cols = ['Rank', 'nn postition', 'Protein', 'nn position on protein', 'aa position on protein', 'aa reference', 'codon reference', 'aa variation', 'codon variation', 'SNV codon position (1, 2, 3)']
+cols = ['Rank', 'nn postition', 'Protein', 'nn position on protein', 'aa position on protein', 'aa neighbours (-5aa, SNVaa, +5aa)', 'aa reference', 'codon reference', 'aa variation', 'codon variation', 'SNV codon position (1, 2, 3)']
 # dummy_sample = np.zeros(len(cols))
 
 rank = 1
@@ -1319,46 +1329,14 @@ for nnpos in imp_merged.index:
         aa_var = 'X'
         codon_var = 'xxx'
 
+    snippet = str(translated_proteins[prot][aapos-6:aapos+5])
 
 
-
-    row = [rank, nnpos, prot, nnpos_on_prot, aapos, str(aa_ref.seq), str(codon.seq), " ".join(aa_var), " ".join(codon_var), codon_pos]
+    row = [rank, nnpos, prot, nnpos_on_prot, aapos, snippet, str(aa_ref.seq), str(codon.seq), " ".join(aa_var), " ".join(codon_var), codon_pos]
     rows.append(row)
     rank +=1
 
 SNV_RESULTS = pd.DataFrame(rows, index=imp_merged.index, columns=cols)
 
-SNV_RESULTS.to_csv(tab_dir+'/SNV_NHP_YFV_RESULTS.csv')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# The analysis below and the results shown in "table" demonstrate the power of XGBoost. It only picked 3 features, and there was a total of 5 that really had any informative value. All the rest, that both RF and LR gave some importance (albeit small), have no information at all, given that they do not contain a nucleotide that is different from the most frequent one in the other class and in the Alouatta samples.
+t = datetime.datetime.now()
+SNV_RESULTS.to_csv(tab_dir+'/SNV_{1}_RESULTS_{0}.csv'.format(t, analysis))
